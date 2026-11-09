@@ -1,3 +1,4 @@
+import { Canvas } from './components/Canvas'
 import './App.css'
 
 function App(): React.JSX.Element {
@@ -7,7 +8,7 @@ function App(): React.JSX.Element {
         <h1>Mini Figma</h1>
       </header>
       <main className="app-main">
-        <p>Editor coming soon.</p>
+        <Canvas />
       </main>
     </div>
   )
