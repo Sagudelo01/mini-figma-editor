@@ -1,6 +1,11 @@
 import { create } from 'zustand'
-import type { CircleShape, RectangleShape, Shape, TextShape } from '../types'
+import type { BaseShape, CircleShape, RectangleShape, Shape, TextShape } from '../types'
 import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_FILL } from '../constants'
+
+/** Fields of a shape that can be mutated after creation. */
+export type ShapePatch = Partial<
+  Pick<BaseShape, 'x' | 'y' | 'width' | 'height' | 'rotation' | 'fill'>
+>
 
 interface EditorState {
   shapes: Shape[]
@@ -9,6 +14,7 @@ interface EditorState {
   addCircle: () => void
   addText: () => void
   selectShape: (id: string | null) => void
+  updateShape: (id: string, patch: ShapePatch) => void
 }
 
 /** Monotonic offset so successive shapes do not stack exactly on top of each other. */
@@ -99,4 +105,9 @@ export const useEditorStore = create<EditorState>()((set) => ({
   },
 
   selectShape: (id) => set({ selectedId: id }),
+
+  updateShape: (id, patch) =>
+    set((state) => ({
+      shapes: state.shapes.map((shape) => (shape.id === id ? { ...shape, ...patch } : shape)),
+    })),
 }))
