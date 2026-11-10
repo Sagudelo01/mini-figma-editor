@@ -7,10 +7,17 @@ interface NumberFieldProps {
   label: string
   value: number
   min?: number
+  onBeginChange: () => void
   onCommit: (value: number) => void
 }
 
-function NumberField({ label, value, min, onCommit }: NumberFieldProps): React.JSX.Element {
+function NumberField({
+  label,
+  value,
+  min,
+  onBeginChange,
+  onCommit,
+}: NumberFieldProps): React.JSX.Element {
   return (
     <label className="field">
       <span className="field-label">{label}</span>
@@ -18,6 +25,7 @@ function NumberField({ label, value, min, onCommit }: NumberFieldProps): React.J
         type="number"
         value={Math.round(value)}
         min={min}
+        onFocus={onBeginChange}
         onChange={(event) => {
           const next = Number(event.target.value)
           if (Number.isFinite(next)) onCommit(next)
@@ -30,6 +38,7 @@ function NumberField({ label, value, min, onCommit }: NumberFieldProps): React.J
 function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
   const updateShape = useEditorStore((state) => state.updateShape)
   const deleteShape = useEditorStore((state) => state.deleteShape)
+  const beginChange = useEditorStore((state) => state.beginChange)
 
   const patch = (change: ShapePatch): void => updateShape(shape.id, change)
 
@@ -38,23 +47,36 @@ function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
       <div className="properties-kind">{shape.kind}</div>
 
       <div className="field-grid">
-        <NumberField label="X" value={shape.x} onCommit={(x) => patch({ x })} />
-        <NumberField label="Y" value={shape.y} onCommit={(y) => patch({ y })} />
+        <NumberField
+          label="X"
+          value={shape.x}
+          onBeginChange={beginChange}
+          onCommit={(x) => patch({ x })}
+        />
+        <NumberField
+          label="Y"
+          value={shape.y}
+          onBeginChange={beginChange}
+          onCommit={(y) => patch({ y })}
+        />
         <NumberField
           label="W"
           value={shape.width}
           min={MIN_SIZE}
+          onBeginChange={beginChange}
           onCommit={(width) => patch({ width: Math.max(MIN_SIZE, width) })}
         />
         <NumberField
           label="H"
           value={shape.height}
           min={MIN_SIZE}
+          onBeginChange={beginChange}
           onCommit={(height) => patch({ height: Math.max(MIN_SIZE, height) })}
         />
         <NumberField
           label="Rotation"
           value={shape.rotation}
+          onBeginChange={beginChange}
           onCommit={(rotation) => patch({ rotation })}
         />
       </div>
@@ -65,6 +87,7 @@ function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
           <input
             type="color"
             value={shape.fill}
+            onFocus={beginChange}
             onChange={(event) => patch({ fill: event.target.value })}
           />
           <span className="color-value">{shape.fill}</span>

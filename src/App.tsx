@@ -12,12 +12,28 @@ function isTextEntry(target: EventTarget | null): boolean {
 function App(): React.JSX.Element {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
-      if (event.key !== 'Delete' && event.key !== 'Backspace') return
       if (isTextEntry(event.target)) return
-      const { selectedId, deleteShape } = useEditorStore.getState()
-      if (selectedId !== null) {
+
+      const mod = event.metaKey || event.ctrlKey
+      if (mod && event.key.toLowerCase() === 'z') {
         event.preventDefault()
-        deleteShape(selectedId)
+        const { undo, redo } = useEditorStore.getState()
+        if (event.shiftKey) redo()
+        else undo()
+        return
+      }
+      if (mod && event.key.toLowerCase() === 'y') {
+        event.preventDefault()
+        useEditorStore.getState().redo()
+        return
+      }
+
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const { selectedId, deleteShape } = useEditorStore.getState()
+        if (selectedId !== null) {
+          event.preventDefault()
+          deleteShape(selectedId)
+        }
       }
     }
     window.addEventListener('keydown', onKeyDown)

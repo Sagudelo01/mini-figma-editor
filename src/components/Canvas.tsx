@@ -21,6 +21,7 @@ import {
   type Point,
 } from '../lib/geometry'
 import { computeResize, computeRotation } from '../lib/transform'
+import { drawShape, withRotation } from '../lib/render'
 
 type Interaction =
   | { kind: 'move'; id: string; startPointer: Point; startX: number; startY: number }
@@ -32,40 +33,6 @@ const CORNER_CURSORS: Record<CornerId, string> = {
   br: 'nwse-resize',
   tr: 'nesw-resize',
   bl: 'nesw-resize',
-}
-
-function withRotation(ctx: CanvasRenderingContext2D, shape: Shape, draw: () => void): void {
-  const center = getCenter(shape)
-  ctx.save()
-  ctx.translate(center.x, center.y)
-  ctx.rotate((shape.rotation * Math.PI) / 180)
-  ctx.translate(-center.x, -center.y)
-  draw()
-  ctx.restore()
-}
-
-function drawShape(ctx: CanvasRenderingContext2D, shape: Shape): void {
-  withRotation(ctx, shape, () => {
-    ctx.fillStyle = shape.fill
-    switch (shape.kind) {
-      case 'rectangle':
-        ctx.fillRect(shape.x, shape.y, shape.width, shape.height)
-        break
-      case 'circle': {
-        const rx = shape.width / 2
-        const ry = shape.height / 2
-        ctx.beginPath()
-        ctx.ellipse(shape.x + rx, shape.y + ry, rx, ry, 0, 0, Math.PI * 2)
-        ctx.fill()
-        break
-      }
-      case 'text':
-        ctx.textBaseline = 'top'
-        ctx.font = `${shape.fontSize}px system-ui, sans-serif`
-        ctx.fillText(shape.text, shape.x, shape.y)
-        break
-    }
-  })
 }
 
 function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape): void {
@@ -109,6 +76,7 @@ export function Canvas(): React.JSX.Element {
   const selectedId = useEditorStore((state) => state.selectedId)
   const selectShape = useEditorStore((state) => state.selectShape)
   const updateShape = useEditorStore((state) => state.updateShape)
+  const beginChange = useEditorStore((state) => state.beginChange)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -154,11 +122,13 @@ export function Canvas(): React.JSX.Element {
     if (selected !== undefined) {
       const handle = hitHandle(selected, point)
       if (handle === 'rotate') {
+        beginChange()
         interactionRef.current = { kind: 'rotate', id: selected.id, center: getCenter(selected) }
         event.currentTarget.setPointerCapture(event.pointerId)
         return
       }
       if (handle !== null) {
+        beginChange()
         const corners = getCorners(selected)
         interactionRef.current = {
           kind: 'resize',
@@ -174,6 +144,7 @@ export function Canvas(): React.JSX.Element {
     const hit = findTopmostShapeAt(shapes, point)
     if (hit !== undefined) {
       selectShape(hit.id)
+      beginChange()
       interactionRef.current = {
         kind: 'move',
         id: hit.id,
