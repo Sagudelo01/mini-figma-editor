@@ -1,8 +1,31 @@
 import { create } from 'zustand'
-import type { Shape } from '../types'
+import type { CircleShape, RectangleShape, Shape, TextShape } from '../types'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_FILL } from '../constants'
 
 interface EditorState {
   shapes: Shape[]
+  selectedId: string | null
+  addRectangle: () => void
+  addCircle: () => void
+  addText: () => void
+  selectShape: (id: string | null) => void
+}
+
+/** Monotonic offset so successive shapes do not stack exactly on top of each other. */
+let spawnIndex = 0
+
+function spawnPosition(width: number, height: number): { x: number; y: number } {
+  const step = 24
+  const offset = (spawnIndex % 6) * step
+  spawnIndex += 1
+  return {
+    x: Math.round((CANVAS_WIDTH - width) / 2 + offset - step * 2.5),
+    y: Math.round((CANVAS_HEIGHT - height) / 2 + offset - step * 2.5),
+  }
+}
+
+function createId(): string {
+  return crypto.randomUUID()
 }
 
 const initialShapes: Shape[] = [
@@ -14,10 +37,66 @@ const initialShapes: Shape[] = [
     width: 240,
     height: 160,
     rotation: 0,
-    fill: '#4f46e5',
+    fill: DEFAULT_FILL,
   },
 ]
 
-export const useEditorStore = create<EditorState>()(() => ({
+export const useEditorStore = create<EditorState>()((set) => ({
   shapes: initialShapes,
+  selectedId: null,
+
+  addRectangle: () => {
+    const width = 160
+    const height = 120
+    const { x, y } = spawnPosition(width, height)
+    const shape: RectangleShape = {
+      id: createId(),
+      kind: 'rectangle',
+      x,
+      y,
+      width,
+      height,
+      rotation: 0,
+      fill: DEFAULT_FILL,
+    }
+    set((state) => ({ shapes: [...state.shapes, shape], selectedId: shape.id }))
+  },
+
+  addCircle: () => {
+    const size = 140
+    const { x, y } = spawnPosition(size, size)
+    const shape: CircleShape = {
+      id: createId(),
+      kind: 'circle',
+      x,
+      y,
+      width: size,
+      height: size,
+      rotation: 0,
+      fill: '#059669',
+    }
+    set((state) => ({ shapes: [...state.shapes, shape], selectedId: shape.id }))
+  },
+
+  addText: () => {
+    const fontSize = 32
+    const width = 160
+    const height = Math.round(fontSize * 1.2)
+    const { x, y } = spawnPosition(width, height)
+    const shape: TextShape = {
+      id: createId(),
+      kind: 'text',
+      x,
+      y,
+      width,
+      height,
+      rotation: 0,
+      fill: '#111827',
+      text: 'Text',
+      fontSize,
+    }
+    set((state) => ({ shapes: [...state.shapes, shape], selectedId: shape.id }))
+  },
+
+  selectShape: (id) => set({ selectedId: id }),
 }))

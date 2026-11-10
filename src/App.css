@@ -5,6 +5,9 @@
 }
 
 .app-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid #2a2a2a;
 }
@@ -13,6 +16,33 @@
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toolbar button {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.875rem;
+  color: #e5e5e5;
+  background: #2d2d2d;
+  border: 1px solid #3f3f3f;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.toolbar button:hover {
+  background: #383838;
+  border-color: #525252;
+}
+
+.toolbar button:active {
+  background: #444;
 }
 
 .app-main {
