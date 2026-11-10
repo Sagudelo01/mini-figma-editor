@@ -8,34 +8,28 @@ export interface Point {
 
 export type CornerId = 'tl' | 'tr' | 'br' | 'bl'
 
-/** Center of a shape's bounding box, in canvas coordinates. */
 export function getCenter(shape: Shape): Point {
   return { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 }
 }
 
-/** Rotates a vector (no translation) by `angleRad` (clockwise, y-down). */
+// Clockwise rotation in a y-down space (the canvas convention).
 export function rotateVector(v: Point, angleRad: number): Point {
   const cos = Math.cos(angleRad)
   const sin = Math.sin(angleRad)
   return { x: v.x * cos - v.y * sin, y: v.x * sin + v.y * cos }
 }
 
-/** Rotates `point` around `center` by `angleRad` radians (clockwise, y-down). */
 export function rotatePoint(point: Point, center: Point, angleRad: number): Point {
   const d = rotateVector({ x: point.x - center.x, y: point.y - center.y }, angleRad)
   return { x: center.x + d.x, y: center.y + d.y }
 }
 
-/**
- * Maps a canvas-space point into the shape's local (unrotated) space, so that
- * axis-aligned tests can be used regardless of the shape's rotation.
- */
+// Undo the shape's rotation so callers can test against its axis-aligned box.
 export function toLocalPoint(shape: Shape, point: Point): Point {
   const center = getCenter(shape)
   return rotatePoint(point, center, (-shape.rotation * Math.PI) / 180)
 }
 
-/** Whether `point` (canvas space) lies inside the shape, honoring rotation. */
 export function hitTest(shape: Shape, point: Point): boolean {
   const local = toLocalPoint(shape, point)
 
@@ -48,7 +42,6 @@ export function hitTest(shape: Shape, point: Point): boolean {
     return nx * nx + ny * ny <= 1
   }
 
-  // Rectangles and text use their axis-aligned bounding box.
   return (
     local.x >= shape.x &&
     local.x <= shape.x + shape.width &&
@@ -57,7 +50,7 @@ export function hitTest(shape: Shape, point: Point): boolean {
   )
 }
 
-/** Returns the topmost shape (last drawn) under `point`, or undefined. */
+// Topmost shape is the one drawn last, so search back to front.
 export function findTopmostShapeAt(shapes: readonly Shape[], point: Point): Shape | undefined {
   for (let i = shapes.length - 1; i >= 0; i--) {
     const shape = shapes[i]
@@ -66,7 +59,6 @@ export function findTopmostShapeAt(shapes: readonly Shape[], point: Point): Shap
   return undefined
 }
 
-/** World positions of the four corner handles, honoring rotation. */
 export function getCorners(shape: Shape): Record<CornerId, Point> {
   const center = getCenter(shape)
   const hw = shape.width / 2
@@ -84,7 +76,6 @@ export function getCorners(shape: Shape): Record<CornerId, Point> {
   }
 }
 
-/** World position of the rotation handle, floating above the top edge. */
 export function getRotateHandle(shape: Shape): Point {
   const center = getCenter(shape)
   const angle = (shape.rotation * Math.PI) / 180
@@ -92,13 +83,11 @@ export function getRotateHandle(shape: Shape): Point {
   return { x: center.x + v.x, y: center.y + v.y }
 }
 
-/** The corner diagonally opposite to `corner`. */
 export function oppositeCorner(corner: CornerId): CornerId {
   const map: Record<CornerId, CornerId> = { tl: 'br', tr: 'bl', br: 'tl', bl: 'tr' }
   return map[corner]
 }
 
-/** Squared distance between two points. */
 export function distanceSquared(a: Point, b: Point): number {
   const dx = a.x - b.x
   const dy = a.y - b.y

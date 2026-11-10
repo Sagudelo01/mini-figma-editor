@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import type { BaseShape, CircleShape, RectangleShape, Shape, TextShape } from '../types'
 import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_FILL } from '../constants'
 
-/** Fields of a shape that can be mutated after creation. */
 export type ShapePatch = Partial<
   Pick<BaseShape, 'x' | 'y' | 'width' | 'height' | 'rotation' | 'fill'>
 >
@@ -17,7 +16,7 @@ interface EditorState {
   updateShape: (id: string, patch: ShapePatch) => void
 }
 
-/** Monotonic offset so successive shapes do not stack exactly on top of each other. */
+// Staircase successive shapes so they don't spawn exactly on top of each other.
 let spawnIndex = 0
 
 function spawnPosition(width: number, height: number): { x: number; y: number } {

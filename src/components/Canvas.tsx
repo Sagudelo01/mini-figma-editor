@@ -34,7 +34,6 @@ const CORNER_CURSORS: Record<CornerId, string> = {
   bl: 'nesw-resize',
 }
 
-/** Applies the shape's rotation around its center, runs `draw`, then restores. */
 function withRotation(ctx: CanvasRenderingContext2D, shape: Shape, draw: () => void): void {
   const center = getCenter(shape)
   ctx.save()
@@ -73,11 +72,9 @@ function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape): void {
   withRotation(ctx, shape, () => {
     ctx.strokeStyle = SELECTION_COLOR
     ctx.lineWidth = 1.5
-
-    // Bounding outline.
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height)
 
-    // Rotation handle: a stem rising above the top edge with a circle on top.
+    // Rotation handle: a stem above the top edge with a grab circle on top.
     const topCenterX = shape.x + shape.width / 2
     ctx.beginPath()
     ctx.moveTo(topCenterX, shape.y)
@@ -89,7 +86,6 @@ function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape): void {
     ctx.fill()
     ctx.stroke()
 
-    // Corner resize handles.
     const corners: Point[] = [
       { x: shape.x, y: shape.y },
       { x: shape.x + shape.width, y: shape.y },
@@ -141,7 +137,6 @@ export function Canvas(): React.JSX.Element {
     return { x: event.clientX - rect.left, y: event.clientY - rect.top }
   }
 
-  /** Detects which handle of the selected shape (if any) is under `point`. */
   function hitHandle(shape: Shape, point: Point): 'rotate' | CornerId | null {
     const radiusSq = HANDLE_HIT_RADIUS * HANDLE_HIT_RADIUS
     if (distanceSquared(point, getRotateHandle(shape)) <= radiusSq) return 'rotate'

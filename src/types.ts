@@ -1,17 +1,13 @@
-/** Shared geometry and shape model for the editor. */
-
 export type ShapeKind = 'rectangle' | 'circle' | 'text'
 
-/** Properties common to every shape on the canvas. */
 export interface BaseShape {
   readonly id: string
   kind: ShapeKind
-  /** Top-left corner in canvas coordinates. */
+  // x/y is the top-left corner; rotation is clockwise degrees about the center.
   x: number
   y: number
   width: number
   height: number
-  /** Clockwise rotation in degrees, around the shape's center. */
   rotation: number
   fill: string
 }
