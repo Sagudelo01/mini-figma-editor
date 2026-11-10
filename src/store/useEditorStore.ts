@@ -14,6 +14,7 @@ interface EditorState {
   addText: () => void
   selectShape: (id: string | null) => void
   updateShape: (id: string, patch: ShapePatch) => void
+  deleteShape: (id: string) => void
 }
 
 // Staircase successive shapes so they don't spawn exactly on top of each other.
@@ -108,5 +109,11 @@ export const useEditorStore = create<EditorState>()((set) => ({
   updateShape: (id, patch) =>
     set((state) => ({
       shapes: state.shapes.map((shape) => (shape.id === id ? { ...shape, ...patch } : shape)),
+    })),
+
+  deleteShape: (id) =>
+    set((state) => ({
+      shapes: state.shapes.filter((shape) => shape.id !== id),
+      selectedId: state.selectedId === id ? null : state.selectedId,
     })),
 }))
