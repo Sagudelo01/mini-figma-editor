@@ -4,22 +4,28 @@ A small Figma-like visual editor built with React, TypeScript and an HTML5 canva
 
 ## Features
 
-- **Shapes** — add rectangles, circles and text to the canvas.
+- **Shapes** — add rectangles, circles and text to the canvas; they animate in.
 - **Selection** — click to select the topmost shape under the cursor; click empty space to deselect.
 - **Transform** — drag a shape to move it, drag the corner handles to resize, and drag the rotation handle to rotate. Resizing and rotation are fully rotation-aware, so a rotated shape still scales along its own axes.
-- **Properties panel** — edit the selected shape's X, Y, width, height, rotation and fill color, with live updates on the canvas.
-- **Delete** — remove the selected shape from the panel or with the keyboard.
+- **Properties panel** — edit the selected shape's X, Y, width, height, rotation and fill color, with live updates. With nothing selected, the panel edits the artboard background color.
+- **Duplicate & delete** — duplicate the selection or remove it from the panel or the keyboard.
 - **Undo / redo** — history with per-gesture granularity, available from the toolbar and keyboard.
-- **Export** — download the canvas as a 2× PNG.
+- **Zoom & pan** — zoom the artboard toward the cursor, with `+`/`-` controls and a visible percentage; pan by dragging. Selection and transforms work at any zoom.
+- **Theme** — switch between light and dark; the choice is remembered.
+- **Export** — download the artboard as a 2× PNG, always at 100% regardless of the current zoom.
 
 ## Keyboard shortcuts
 
-| Action        | Shortcut                             |
-| ------------- | ------------------------------------ |
-| Undo          | `Ctrl/Cmd + Z`                       |
-| Redo          | `Ctrl/Cmd + Shift + Z` or `Ctrl + Y` |
-| Delete shape  | `Delete` or `Backspace`              |
-| Snap rotation | Hold `Shift` while rotating (15°)    |
+| Action        | Shortcut                                           |
+| ------------- | -------------------------------------------------- |
+| Undo          | `Ctrl/Cmd + Z`                                     |
+| Redo          | `Ctrl/Cmd + Shift + Z` or `Ctrl + Y`               |
+| Duplicate     | `Ctrl/Cmd + D`                                     |
+| Delete shape  | `Delete` or `Backspace`                            |
+| Zoom in / out | `Ctrl/Cmd + scroll`                                |
+| Reset zoom    | `Ctrl/Cmd + 0`                                     |
+| Pan canvas    | Drag with `Space` held, or the middle mouse button |
+| Snap rotation | Hold `Shift` while rotating (15°)                  |
 
 ## Tech stack
 

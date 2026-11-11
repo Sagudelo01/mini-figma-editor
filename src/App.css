@@ -20,6 +20,25 @@
   letter-spacing: -0.01em;
 }
 
+.app-header-end {
+  margin-left: auto;
+}
+
+.app-header,
+.panel,
+.app-main,
+.tool-btn,
+.ghost-button,
+.danger-button,
+.field input,
+.color-control,
+.zoom-controls {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+
 /* Toolbar */
 .toolbar {
   display: flex;

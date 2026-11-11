@@ -3,6 +3,7 @@ import { Canvas } from './components/Canvas'
 import { Toolbar } from './components/Toolbar'
 import { PropertiesPanel } from './components/PropertiesPanel'
 import { ZoomControls } from './components/ZoomControls'
+import { ThemeToggle } from './components/ThemeToggle'
 import { useEditorStore } from './store/useEditorStore'
 import './App.css'
 
@@ -58,6 +59,9 @@ function App(): React.JSX.Element {
       <header className="app-header">
         <div className="app-brand">Mini Figma</div>
         <Toolbar />
+        <div className="app-header-end">
+          <ThemeToggle />
+        </div>
       </header>
       <div className="app-body">
         <main className="app-main">
