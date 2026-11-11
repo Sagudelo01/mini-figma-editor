@@ -118,25 +118,20 @@
 }
 
 .app-main {
+  position: relative;
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  overflow: auto;
+  min-width: 0;
+  overflow: hidden;
   background-color: var(--bg);
   background-image: radial-gradient(var(--dot) 1.5px, transparent 1.5px);
   background-size: 22px 22px;
 }
 
-.canvas-stage {
-  position: relative;
-  line-height: 0;
-}
-
 .editor-canvas {
-  border-radius: var(--radius);
-  box-shadow: 0 12px 40px var(--shadow);
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
 }
 
 .canvas-hint {
@@ -153,6 +148,56 @@
   border-radius: 999px;
   backdrop-filter: blur(4px);
   pointer-events: none;
+}
+
+/* Zoom controls */
+.zoom-controls {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 6px 20px var(--shadow);
+  backdrop-filter: blur(6px);
+}
+
+.zoom-btn,
+.zoom-pct {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.zoom-btn {
+  width: 28px;
+}
+
+.zoom-pct {
+  min-width: 48px;
+  padding: 0 0.4rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.zoom-btn:hover,
+.zoom-pct:hover {
+  background: var(--surface-3);
+  color: var(--text);
 }
 
 /* Properties panel */

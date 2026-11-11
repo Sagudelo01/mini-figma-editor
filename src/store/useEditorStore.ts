@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import type { BaseShape, CircleShape, RectangleShape, Shape, TextShape } from '../types'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, DEFAULT_FILL } from '../constants'
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  DEFAULT_FILL,
+  ZOOM_MAX,
+  ZOOM_MIN,
+  ZOOM_STEP,
+} from '../constants'
 
 export type ShapePatch = Partial<
   Pick<BaseShape, 'x' | 'y' | 'width' | 'height' | 'rotation' | 'fill'>
@@ -32,6 +39,26 @@ interface EditorState {
   deleteShape: (id: string) => void
   undo: () => void
   redo: () => void
+
+  // View state (zoom/pan). Kept out of history so undo/redo never move the view.
+  zoom: number
+  pan: { x: number; y: number }
+  viewport: { w: number; h: number }
+  viewReady: boolean
+  setViewport: (w: number, h: number) => void
+  setPan: (pan: { x: number; y: number }) => void
+  zoomAt: (factor: number, screenX: number, screenY: number) => void
+  zoomInAtCenter: () => void
+  zoomOutAtCenter: () => void
+  resetView: () => void
+}
+
+function clampZoom(zoom: number): number {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom))
+}
+
+function centerPan(w: number, h: number, zoom: number): { x: number; y: number } {
+  return { x: (w - CANVAS_WIDTH * zoom) / 2, y: (h - CANVAS_HEIGHT * zoom) / 2 }
 }
 
 // Staircase successive shapes so they don't spawn exactly on top of each other.
@@ -200,5 +227,40 @@ export const useEditorStore = create<EditorState>()((set, get) => {
           snapshotRev: rev,
         }
       }),
+
+    zoom: 1,
+    pan: { x: 0, y: 0 },
+    viewport: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
+    viewReady: false,
+
+    setViewport: (w, h) =>
+      set((state) =>
+        state.viewReady
+          ? { viewport: { w, h } }
+          : { viewport: { w, h }, viewReady: true, pan: centerPan(w, h, state.zoom) },
+      ),
+
+    setPan: (pan) => set({ pan }),
+
+    zoomAt: (factor, screenX, screenY) =>
+      set((state) => {
+        const zoom = clampZoom(state.zoom * factor)
+        const lx = (screenX - state.pan.x) / state.zoom
+        const ly = (screenY - state.pan.y) / state.zoom
+        return { zoom, pan: { x: screenX - lx * zoom, y: screenY - ly * zoom } }
+      }),
+
+    zoomInAtCenter: () => {
+      const { viewport, zoomAt } = get()
+      zoomAt(ZOOM_STEP, viewport.w / 2, viewport.h / 2)
+    },
+
+    zoomOutAtCenter: () => {
+      const { viewport, zoomAt } = get()
+      zoomAt(1 / ZOOM_STEP, viewport.w / 2, viewport.h / 2)
+    },
+
+    resetView: () =>
+      set((state) => ({ zoom: 1, pan: centerPan(state.viewport.w, state.viewport.h, 1) })),
   }
 })

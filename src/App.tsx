@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Canvas } from './components/Canvas'
 import { Toolbar } from './components/Toolbar'
 import { PropertiesPanel } from './components/PropertiesPanel'
+import { ZoomControls } from './components/ZoomControls'
 import { useEditorStore } from './store/useEditorStore'
 import './App.css'
 
@@ -36,6 +37,11 @@ function App(): React.JSX.Element {
         }
         return
       }
+      if (mod && event.key === '0') {
+        event.preventDefault()
+        store.resetView()
+        return
+      }
       if (event.key === 'Delete' || event.key === 'Backspace') {
         if (store.selectedId !== null) {
           event.preventDefault()
@@ -55,14 +61,13 @@ function App(): React.JSX.Element {
       </header>
       <div className="app-body">
         <main className="app-main">
-          <div className="canvas-stage">
-            <Canvas />
-            {isEmpty && (
-              <div className="canvas-hint" aria-hidden="true">
-                Add a shape from the toolbar to get started
-              </div>
-            )}
-          </div>
+          <Canvas />
+          {isEmpty && (
+            <div className="canvas-hint" aria-hidden="true">
+              Add a shape from the toolbar to get started
+            </div>
+          )}
+          <ZoomControls />
         </main>
         <PropertiesPanel />
       </div>

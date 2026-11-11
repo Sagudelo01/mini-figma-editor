@@ -17,3 +17,8 @@ export const APPEAR_START_SCALE = 0.85
 
 /** Selection outline fade-in (ms). */
 export const SELECT_MS = 130
+
+/** Zoom bounds and the step used by the +/- controls. */
+export const ZOOM_MIN = 0.1
+export const ZOOM_MAX = 5
+export const ZOOM_STEP = 1.2

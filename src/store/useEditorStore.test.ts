@@ -10,6 +10,10 @@ function reset(): void {
     future: [],
     rev: 0,
     snapshotRev: -1,
+    zoom: 1,
+    pan: { x: 0, y: 0 },
+    viewport: { w: 1000, h: 600 },
+    viewReady: true,
   })
 }
 
@@ -108,5 +112,42 @@ describe('beginChange', () => {
     store.beginChange()
     store.beginChange()
     expect(useEditorStore.getState().past).toHaveLength(1)
+  })
+})
+
+describe('view / zoom', () => {
+  const logicalUnder = (sx: number): number => {
+    const { pan, zoom } = useEditorStore.getState()
+    return (sx - pan.x) / zoom
+  }
+
+  it('keeps the point under the cursor fixed while zooming', () => {
+    const before = logicalUnder(100)
+    useEditorStore.getState().zoomAt(2, 100, 100)
+    expect(useEditorStore.getState().zoom).toBe(2)
+    expect(logicalUnder(100)).toBeCloseTo(before)
+  })
+
+  it('clamps zoom to the maximum', () => {
+    useEditorStore.getState().zoomAt(1000, 0, 0)
+    expect(useEditorStore.getState().zoom).toBe(5)
+  })
+
+  it('resetView centers the artboard at 100%', () => {
+    useEditorStore.getState().zoomAt(3, 10, 10)
+    useEditorStore.getState().resetView()
+    const { zoom, pan } = useEditorStore.getState()
+    expect(zoom).toBe(1)
+    expect(pan).toEqual({ x: 100, y: 0 })
+  })
+
+  it('is not affected by undo/redo', () => {
+    const store = useEditorStore.getState()
+    store.addRectangle()
+    store.zoomAt(2, 0, 0)
+    store.undo()
+    expect(useEditorStore.getState().zoom).toBe(2)
+    store.redo()
+    expect(useEditorStore.getState().zoom).toBe(2)
   })
 })

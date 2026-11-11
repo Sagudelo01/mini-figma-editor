@@ -76,10 +76,10 @@ export function getCorners(shape: Shape): Record<CornerId, Point> {
   }
 }
 
-export function getRotateHandle(shape: Shape): Point {
+export function getRotateHandle(shape: Shape, offset = ROTATE_HANDLE_OFFSET): Point {
   const center = getCenter(shape)
   const angle = (shape.rotation * Math.PI) / 180
-  const v = rotateVector({ x: 0, y: -(shape.height / 2) - ROTATE_HANDLE_OFFSET }, angle)
+  const v = rotateVector({ x: 0, y: -(shape.height / 2) - offset }, angle)
   return { x: center.x + v.x, y: center.y + v.y }
 }
 
