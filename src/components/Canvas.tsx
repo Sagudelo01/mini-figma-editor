@@ -1,13 +1,16 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useEditorStore } from '../store/useEditorStore'
 import type { Shape } from '../types'
 import {
+  APPEAR_MS,
+  APPEAR_START_SCALE,
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   HANDLE_HIT_RADIUS,
   HANDLE_SIZE,
   ROTATE_HANDLE_OFFSET,
   ROTATE_HANDLE_RADIUS,
+  SELECT_MS,
   SELECTION_COLOR,
 } from '../constants'
 import {
@@ -35,7 +38,37 @@ const CORNER_CURSORS: Record<CornerId, string> = {
   bl: 'nesw-resize',
 }
 
-function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape): void {
+function easeOutCubic(t: number): number {
+  return 1 - (1 - t) ** 3
+}
+
+function clamp01(t: number): number {
+  return t < 0 ? 0 : t > 1 ? 1 : t
+}
+
+function drawAnimatedShape(
+  ctx: CanvasRenderingContext2D,
+  shape: Shape,
+  scale: number,
+  alpha: number,
+): void {
+  if (scale === 1 && alpha === 1) {
+    drawShape(ctx, shape)
+    return
+  }
+  const center = getCenter(shape)
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.translate(center.x, center.y)
+  ctx.scale(scale, scale)
+  ctx.translate(-center.x, -center.y)
+  drawShape(ctx, shape)
+  ctx.restore()
+}
+
+function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape, alpha: number): void {
+  ctx.save()
+  ctx.globalAlpha = alpha
   withRotation(ctx, shape, () => {
     ctx.strokeStyle = SELECTION_COLOR
     ctx.lineWidth = 1.5
@@ -60,7 +93,6 @@ function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape): void {
       { x: shape.x, y: shape.y + shape.height },
     ]
     const half = HANDLE_SIZE / 2
-    ctx.lineWidth = 1.5
     for (const corner of corners) {
       ctx.beginPath()
       ctx.roundRect(corner.x - half, corner.y - half, HANDLE_SIZE, HANDLE_SIZE, 2)
@@ -69,6 +101,7 @@ function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape): void {
       ctx.stroke()
     }
   })
+  ctx.restore()
 }
 
 export function Canvas(): React.JSX.Element {
@@ -82,29 +115,104 @@ export function Canvas(): React.JSX.Element {
   const updateShape = useEditorStore((state) => state.updateShape)
   const beginChange = useEditorStore((state) => state.beginChange)
 
+  // Latest values the animation loop reads without re-subscribing; kept in sync
+  // from effects (never assigned during render).
+  const shapesRef = useRef(shapes)
+  const selectedIdRef = useRef(selectedId)
+  const backgroundRef = useRef(background)
+
+  const appearRef = useRef<Map<string, number>>(new Map())
+  const prevIdsRef = useRef<Set<string>>(new Set())
+  const selectStartRef = useRef(0)
+  const rafRef = useRef<number | null>(null)
+
+  const drawFrame = useCallback((now: number): boolean => {
+    const canvas = canvasRef.current
+    if (canvas === null) return false
+    const ctx = canvas.getContext('2d')
+    if (ctx === null) return false
+
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    ctx.fillStyle = backgroundRef.current
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+
+    let animating = false
+    for (const shape of shapesRef.current) {
+      const start = appearRef.current.get(shape.id)
+      if (start === undefined) {
+        drawShape(ctx, shape)
+        continue
+      }
+      const t = clamp01((now - start) / APPEAR_MS)
+      if (t >= 1) {
+        appearRef.current.delete(shape.id)
+        drawShape(ctx, shape)
+        continue
+      }
+      animating = true
+      const eased = easeOutCubic(t)
+      drawAnimatedShape(ctx, shape, APPEAR_START_SCALE + (1 - APPEAR_START_SCALE) * eased, eased)
+    }
+
+    const selected = shapesRef.current.find((shape) => shape.id === selectedIdRef.current)
+    if (selected !== undefined) {
+      const t = clamp01((now - selectStartRef.current) / SELECT_MS)
+      if (t < 1) animating = true
+      drawSelection(ctx, selected, easeOutCubic(t))
+    }
+
+    return animating
+  }, [])
+
+  const render = useCallback(() => {
+    if (rafRef.current !== null) return
+    const loop = (now: number): void => {
+      const active = drawFrame(now)
+      rafRef.current = active ? requestAnimationFrame(loop) : null
+    }
+    const active = drawFrame(performance.now())
+    if (active) rafRef.current = requestAnimationFrame(loop)
+  }, [drawFrame])
+
+  // Size the backing store once for the device pixel ratio.
   useEffect(() => {
     const canvas = canvasRef.current
     if (canvas === null) return
     const ctx = canvas.getContext('2d')
     if (ctx === null) return
-
     const dpr = window.devicePixelRatio || 1
     canvas.width = CANVAS_WIDTH * dpr
     canvas.height = CANVAS_HEIGHT * dpr
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    render()
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
+  }, [render])
 
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-    ctx.fillStyle = background
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+  // Flag newly created shapes so they animate in.
+  useEffect(() => {
+    shapesRef.current = shapes
+    backgroundRef.current = background
+    const prev = prevIdsRef.current
+    const now = performance.now()
     for (const shape of shapes) {
-      drawShape(ctx, shape)
+      if (!prev.has(shape.id)) appearRef.current.set(shape.id, now)
     }
+    const ids = new Set(shapes.map((shape) => shape.id))
+    for (const id of appearRef.current.keys()) {
+      if (!ids.has(id)) appearRef.current.delete(id)
+    }
+    prevIdsRef.current = ids
+    render()
+  }, [shapes, background, render])
 
-    const selected = shapes.find((shape) => shape.id === selectedId)
-    if (selected !== undefined) {
-      drawSelection(ctx, selected)
-    }
-  }, [shapes, selectedId, background])
+  useEffect(() => {
+    selectedIdRef.current = selectedId
+    selectStartRef.current = performance.now()
+    render()
+  }, [selectedId, render])
 
   function getCanvasPoint(event: React.PointerEvent<HTMLCanvasElement>): Point {
     const rect = event.currentTarget.getBoundingClientRect()

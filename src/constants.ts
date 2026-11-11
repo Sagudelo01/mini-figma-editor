@@ -10,3 +10,10 @@ export const ROTATE_HANDLE_OFFSET = 28
 export const ROTATE_HANDLE_RADIUS = 6
 
 export const MIN_SIZE = 10
+
+/** Shape appearance animation (ms) and its starting scale. */
+export const APPEAR_MS = 220
+export const APPEAR_START_SCALE = 0.85
+
+/** Selection outline fade-in (ms). */
+export const SELECT_MS = 130
