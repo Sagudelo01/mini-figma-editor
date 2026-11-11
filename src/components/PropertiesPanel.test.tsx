@@ -19,14 +19,24 @@ function selectSample(): void {
   useEditorStore.setState({
     shapes: [{ ...sampleRect }],
     selectedId: sampleRect.id,
+    background: '#ffffff',
     past: [],
     future: [],
-    snapshotRef: null,
+    rev: 0,
+    snapshotRev: -1,
   })
 }
 
 beforeEach(() => {
-  useEditorStore.setState({ shapes: [], selectedId: null, past: [], future: [], snapshotRef: null })
+  useEditorStore.setState({
+    shapes: [],
+    selectedId: null,
+    background: '#ffffff',
+    past: [],
+    future: [],
+    rev: 0,
+    snapshotRev: -1,
+  })
 })
 
 describe('PropertiesPanel', () => {

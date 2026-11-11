@@ -6,20 +6,29 @@ export type ShapePatch = Partial<
   Pick<BaseShape, 'x' | 'y' | 'width' | 'height' | 'rotation' | 'fill'>
 >
 
+interface Snapshot {
+  shapes: Shape[]
+  background: string
+}
+
 interface EditorState {
   shapes: Shape[]
   selectedId: string | null
-  past: Shape[][]
-  future: Shape[][]
-  // The shapes array reference already captured in `past`, so a no-op
-  // beginChange (e.g. focusing a field without editing) doesn't stack entries.
-  snapshotRef: Shape[] | null
+  background: string
+  past: Snapshot[]
+  future: Snapshot[]
+  // Revision bumped on every mutation; beginChange compares it to the revision
+  // of the last snapshot so a no-op (e.g. focusing a field) adds no history.
+  rev: number
+  snapshotRev: number
   addRectangle: () => void
   addCircle: () => void
   addText: () => void
+  duplicateShape: (id: string) => void
   selectShape: (id: string | null) => void
   beginChange: () => void
   updateShape: (id: string, patch: ShapePatch) => void
+  setBackground: (color: string) => void
   deleteShape: (id: string) => void
   undo: () => void
   redo: () => void
@@ -60,23 +69,29 @@ const initialShapes: Shape[] = [
 ]
 
 export const useEditorStore = create<EditorState>()((set, get) => {
+  function mutate(partial: Partial<EditorState>): void {
+    set((state) => ({ ...partial, rev: state.rev + 1 }))
+  }
+
   function addShape(shape: Shape): void {
     get().beginChange()
-    set((state) => ({ shapes: [...state.shapes, shape], selectedId: shape.id }))
+    mutate({ shapes: [...get().shapes, shape], selectedId: shape.id })
   }
 
   return {
     shapes: initialShapes,
     selectedId: null,
+    background: '#ffffff',
     past: [],
     future: [],
-    snapshotRef: null,
+    rev: 0,
+    snapshotRev: -1,
 
     addRectangle: () => {
       const width = 160
       const height = 120
       const { x, y } = spawnPosition(width, height)
-      const shape: RectangleShape = {
+      addShape({
         id: createId(),
         kind: 'rectangle',
         x,
@@ -85,14 +100,13 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         height,
         rotation: 0,
         fill: DEFAULT_FILL,
-      }
-      addShape(shape)
+      } satisfies RectangleShape)
     },
 
     addCircle: () => {
       const size = 140
       const { x, y } = spawnPosition(size, size)
-      const shape: CircleShape = {
+      addShape({
         id: createId(),
         kind: 'circle',
         x,
@@ -101,8 +115,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         height: size,
         rotation: 0,
         fill: '#059669',
-      }
-      addShape(shape)
+      } satisfies CircleShape)
     },
 
     addText: () => {
@@ -110,7 +123,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
       const width = 160
       const height = Math.round(fontSize * 1.2)
       const { x, y } = spawnPosition(width, height)
-      const shape: TextShape = {
+      addShape({
         id: createId(),
         kind: 'text',
         x,
@@ -121,41 +134,54 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         fill: '#111827',
         text: 'Text',
         fontSize,
-      }
-      addShape(shape)
+      } satisfies TextShape)
+    },
+
+    duplicateShape: (id) => {
+      const original = get().shapes.find((shape) => shape.id === id)
+      if (original === undefined) return
+      const copy: Shape = { ...original, id: createId(), x: original.x + 16, y: original.y + 16 }
+      get().beginChange()
+      mutate({ shapes: [...get().shapes, copy], selectedId: copy.id })
     },
 
     selectShape: (id) => set({ selectedId: id }),
 
     beginChange: () => {
-      const { shapes, snapshotRef, past } = get()
-      if (shapes === snapshotRef) return
-      set({ past: [...past, clone(shapes)], future: [], snapshotRef: shapes })
+      const { rev, snapshotRev, past, shapes, background } = get()
+      if (rev === snapshotRev) return
+      set({ past: [...past, { shapes: clone(shapes), background }], future: [], snapshotRev: rev })
     },
 
     updateShape: (id, patch) =>
-      set((state) => ({
-        shapes: state.shapes.map((shape) => (shape.id === id ? { ...shape, ...patch } : shape)),
-      })),
+      mutate({
+        shapes: get().shapes.map((shape) => (shape.id === id ? { ...shape, ...patch } : shape)),
+      }),
+
+    setBackground: (color) => mutate({ background: color }),
 
     deleteShape: (id) => {
       get().beginChange()
-      set((state) => ({
-        shapes: state.shapes.filter((shape) => shape.id !== id),
-        selectedId: state.selectedId === id ? null : state.selectedId,
-      }))
+      const { shapes, selectedId } = get()
+      mutate({
+        shapes: shapes.filter((shape) => shape.id !== id),
+        selectedId: selectedId === id ? null : selectedId,
+      })
     },
 
     undo: () =>
       set((state) => {
         const prev = state.past.at(-1)
         if (prev === undefined) return state
+        const rev = state.rev + 1
         return {
-          shapes: prev,
-          snapshotRef: prev,
+          shapes: prev.shapes,
+          background: prev.background,
           past: state.past.slice(0, -1),
-          future: [...state.future, clone(state.shapes)],
-          selectedId: prev.some((s) => s.id === state.selectedId) ? state.selectedId : null,
+          future: [...state.future, { shapes: clone(state.shapes), background: state.background }],
+          selectedId: prev.shapes.some((s) => s.id === state.selectedId) ? state.selectedId : null,
+          rev,
+          snapshotRev: rev,
         }
       }),
 
@@ -163,12 +189,15 @@ export const useEditorStore = create<EditorState>()((set, get) => {
       set((state) => {
         const next = state.future.at(-1)
         if (next === undefined) return state
+        const rev = state.rev + 1
         return {
-          shapes: next,
-          snapshotRef: next,
-          past: [...state.past, clone(state.shapes)],
+          shapes: next.shapes,
+          background: next.background,
+          past: [...state.past, { shapes: clone(state.shapes), background: state.background }],
           future: state.future.slice(0, -1),
-          selectedId: next.some((s) => s.id === state.selectedId) ? state.selectedId : null,
+          selectedId: next.shapes.some((s) => s.id === state.selectedId) ? state.selectedId : null,
+          rev,
+          snapshotRev: rev,
         }
       }),
   }

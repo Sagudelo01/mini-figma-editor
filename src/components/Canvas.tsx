@@ -41,7 +41,7 @@ function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape): void {
     ctx.lineWidth = 1.5
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height)
 
-    // Rotation handle: a stem above the top edge with a grab circle on top.
+    // Rotation handle: a stem above the top edge with a grab knob on top.
     const topCenterX = shape.x + shape.width / 2
     ctx.beginPath()
     ctx.moveTo(topCenterX, shape.y)
@@ -60,10 +60,13 @@ function drawSelection(ctx: CanvasRenderingContext2D, shape: Shape): void {
       { x: shape.x, y: shape.y + shape.height },
     ]
     const half = HANDLE_SIZE / 2
+    ctx.lineWidth = 1.5
     for (const corner of corners) {
+      ctx.beginPath()
+      ctx.roundRect(corner.x - half, corner.y - half, HANDLE_SIZE, HANDLE_SIZE, 2)
       ctx.fillStyle = '#ffffff'
-      ctx.fillRect(corner.x - half, corner.y - half, HANDLE_SIZE, HANDLE_SIZE)
-      ctx.strokeRect(corner.x - half, corner.y - half, HANDLE_SIZE, HANDLE_SIZE)
+      ctx.fill()
+      ctx.stroke()
     }
   })
 }
@@ -74,6 +77,7 @@ export function Canvas(): React.JSX.Element {
 
   const shapes = useEditorStore((state) => state.shapes)
   const selectedId = useEditorStore((state) => state.selectedId)
+  const background = useEditorStore((state) => state.background)
   const selectShape = useEditorStore((state) => state.selectShape)
   const updateShape = useEditorStore((state) => state.updateShape)
   const beginChange = useEditorStore((state) => state.beginChange)
@@ -90,6 +94,8 @@ export function Canvas(): React.JSX.Element {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    ctx.fillStyle = background
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
     for (const shape of shapes) {
       drawShape(ctx, shape)
     }
@@ -98,7 +104,7 @@ export function Canvas(): React.JSX.Element {
     if (selected !== undefined) {
       drawSelection(ctx, selected)
     }
-  }, [shapes, selectedId])
+  }, [shapes, selectedId, background])
 
   function getCanvasPoint(event: React.PointerEvent<HTMLCanvasElement>): Point {
     const rect = event.currentTarget.getBoundingClientRect()

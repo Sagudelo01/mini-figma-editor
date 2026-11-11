@@ -10,29 +10,36 @@ function isTextEntry(target: EventTarget | null): boolean {
 }
 
 function App(): React.JSX.Element {
+  const isEmpty = useEditorStore((state) => state.shapes.length === 0)
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
       if (isTextEntry(event.target)) return
-
       const mod = event.metaKey || event.ctrlKey
+      const store = useEditorStore.getState()
+
       if (mod && event.key.toLowerCase() === 'z') {
         event.preventDefault()
-        const { undo, redo } = useEditorStore.getState()
-        if (event.shiftKey) redo()
-        else undo()
+        if (event.shiftKey) store.redo()
+        else store.undo()
         return
       }
       if (mod && event.key.toLowerCase() === 'y') {
         event.preventDefault()
-        useEditorStore.getState().redo()
+        store.redo()
         return
       }
-
-      if (event.key === 'Delete' || event.key === 'Backspace') {
-        const { selectedId, deleteShape } = useEditorStore.getState()
-        if (selectedId !== null) {
+      if (mod && event.key.toLowerCase() === 'd') {
+        if (store.selectedId !== null) {
           event.preventDefault()
-          deleteShape(selectedId)
+          store.duplicateShape(store.selectedId)
+        }
+        return
+      }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (store.selectedId !== null) {
+          event.preventDefault()
+          store.deleteShape(store.selectedId)
         }
       }
     }
@@ -43,12 +50,19 @@ function App(): React.JSX.Element {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Mini Figma</h1>
+        <div className="app-brand">Mini Figma</div>
         <Toolbar />
       </header>
       <div className="app-body">
         <main className="app-main">
-          <Canvas />
+          <div className="canvas-stage">
+            <Canvas />
+            {isEmpty && (
+              <div className="canvas-hint" aria-hidden="true">
+                Add a shape from the toolbar to get started
+              </div>
+            )}
+          </div>
         </main>
         <PropertiesPanel />
       </div>

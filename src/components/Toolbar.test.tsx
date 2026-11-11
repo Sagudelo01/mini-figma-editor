@@ -4,7 +4,15 @@ import { Toolbar } from './Toolbar'
 import { useEditorStore } from '../store/useEditorStore'
 
 beforeEach(() => {
-  useEditorStore.setState({ shapes: [], selectedId: null, past: [], future: [], snapshotRef: null })
+  useEditorStore.setState({
+    shapes: [],
+    selectedId: null,
+    background: '#ffffff',
+    past: [],
+    future: [],
+    rev: 0,
+    snapshotRev: -1,
+  })
 })
 
 describe('Toolbar', () => {

@@ -5,7 +5,11 @@ import { drawScene } from './render'
 // Render at 2x so exported images stay crisp on high-density displays.
 const EXPORT_SCALE = 2
 
-export function exportToPng(shapes: readonly Shape[], filename = 'mini-figma.png'): void {
+export function exportToPng(
+  shapes: readonly Shape[],
+  background = '#ffffff',
+  filename = 'mini-figma.png',
+): void {
   const canvas = document.createElement('canvas')
   canvas.width = CANVAS_WIDTH * EXPORT_SCALE
   canvas.height = CANVAS_HEIGHT * EXPORT_SCALE
@@ -13,7 +17,7 @@ export function exportToPng(shapes: readonly Shape[], filename = 'mini-figma.png
   if (ctx === null) return
 
   ctx.scale(EXPORT_SCALE, EXPORT_SCALE)
-  ctx.fillStyle = '#ffffff'
+  ctx.fillStyle = background
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
   drawScene(ctx, shapes)
 

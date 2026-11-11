@@ -2,6 +2,7 @@ import { useEditorStore } from '../store/useEditorStore'
 import type { ShapePatch } from '../store/useEditorStore'
 import type { Shape } from '../types'
 import { MIN_SIZE } from '../constants'
+import { IconDuplicate, IconTrash } from './icons'
 
 interface NumberFieldProps {
   label: string
@@ -35,16 +36,42 @@ function NumberField({
   )
 }
 
+interface ColorFieldProps {
+  label: string
+  value: string
+  onBeginChange: () => void
+  onCommit: (value: string) => void
+}
+
+function ColorField({ label, value, onBeginChange, onCommit }: ColorFieldProps): React.JSX.Element {
+  return (
+    <div className="field">
+      <span className="field-label">{label}</span>
+      <div className="color-control">
+        <input
+          type="color"
+          aria-label={label}
+          value={value}
+          onFocus={onBeginChange}
+          onChange={(event) => onCommit(event.target.value)}
+        />
+        <span className="color-value">{value}</span>
+      </div>
+    </div>
+  )
+}
+
 function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
   const updateShape = useEditorStore((state) => state.updateShape)
   const deleteShape = useEditorStore((state) => state.deleteShape)
+  const duplicateShape = useEditorStore((state) => state.duplicateShape)
   const beginChange = useEditorStore((state) => state.beginChange)
 
   const patch = (change: ShapePatch): void => updateShape(shape.id, change)
 
   return (
     <div className="properties">
-      <div className="properties-kind">{shape.kind}</div>
+      <div className="panel-section-title">{shape.kind}</div>
 
       <div className="field-grid">
         <NumberField
@@ -81,22 +108,42 @@ function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
         />
       </div>
 
-      <label className="field field-color">
-        <span className="field-label">Color</span>
-        <span className="color-control">
-          <input
-            type="color"
-            value={shape.fill}
-            onFocus={beginChange}
-            onChange={(event) => patch({ fill: event.target.value })}
-          />
-          <span className="color-value">{shape.fill}</span>
-        </span>
-      </label>
+      <ColorField
+        label="Fill"
+        value={shape.fill}
+        onBeginChange={beginChange}
+        onCommit={(fill) => patch({ fill })}
+      />
 
-      <button type="button" className="delete-button" onClick={() => deleteShape(shape.id)}>
-        Delete
-      </button>
+      <div className="panel-actions">
+        <button type="button" className="ghost-button" onClick={() => duplicateShape(shape.id)}>
+          <IconDuplicate />
+          Duplicate
+        </button>
+        <button type="button" className="danger-button" onClick={() => deleteShape(shape.id)}>
+          <IconTrash />
+          Delete
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function CanvasProperties(): React.JSX.Element {
+  const background = useEditorStore((state) => state.background)
+  const setBackground = useEditorStore((state) => state.setBackground)
+  const beginChange = useEditorStore((state) => state.beginChange)
+
+  return (
+    <div className="properties">
+      <div className="panel-section-title">Canvas</div>
+      <ColorField
+        label="Background"
+        value={background}
+        onBeginChange={beginChange}
+        onCommit={setBackground}
+      />
+      <p className="panel-hint">Select a shape to edit it.</p>
     </div>
   )
 }
@@ -108,11 +155,7 @@ export function PropertiesPanel(): React.JSX.Element {
 
   return (
     <aside className="panel" aria-label="Properties">
-      {selected === undefined ? (
-        <p className="panel-empty">Select a shape to edit its properties.</p>
-      ) : (
-        <ShapeProperties shape={selected} />
-      )}
+      {selected === undefined ? <CanvasProperties /> : <ShapeProperties shape={selected} />}
     </aside>
   )
 }

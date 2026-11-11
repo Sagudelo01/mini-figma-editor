@@ -5,9 +5,11 @@ function reset(): void {
   useEditorStore.setState({
     shapes: [],
     selectedId: null,
+    background: '#ffffff',
     past: [],
     future: [],
-    snapshotRef: null,
+    rev: 0,
+    snapshotRev: -1,
   })
 }
 
@@ -40,6 +42,21 @@ describe('updateShape', () => {
   })
 })
 
+describe('duplicateShape', () => {
+  it('creates an offset copy with a new id and selects it', () => {
+    const store = useEditorStore.getState()
+    store.addRectangle()
+    const original = useEditorStore.getState().shapes[0]!
+    store.duplicateShape(original.id)
+    const { shapes, selectedId } = useEditorStore.getState()
+    expect(shapes).toHaveLength(2)
+    const copy = shapes[1]!
+    expect(copy.id).not.toBe(original.id)
+    expect(copy.x).toBe(original.x + 16)
+    expect(selectedId).toBe(copy.id)
+  })
+})
+
 describe('deleteShape', () => {
   it('removes the shape and clears the selection', () => {
     const store = useEditorStore.getState()
@@ -49,6 +66,18 @@ describe('deleteShape', () => {
     const state = useEditorStore.getState()
     expect(state.shapes).toHaveLength(0)
     expect(state.selectedId).toBeNull()
+  })
+})
+
+describe('background', () => {
+  it('updates the canvas background and can be undone', () => {
+    const store = useEditorStore.getState()
+    store.beginChange()
+    store.setBackground('#101010')
+    expect(useEditorStore.getState().background).toBe('#101010')
+
+    store.undo()
+    expect(useEditorStore.getState().background).toBe('#ffffff')
   })
 })
 
