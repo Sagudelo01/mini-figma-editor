@@ -90,6 +90,7 @@ function drawSelection(
   shape: Shape,
   alpha: number,
   zoom: number,
+  showHandles: boolean,
 ): void {
   const line = 1.5 / zoom
   const handle = HANDLE_SIZE / zoom
@@ -102,7 +103,11 @@ function drawSelection(
   withRotation(ctx, shape, () => {
     ctx.strokeStyle = SELECTION_COLOR
     ctx.lineWidth = line
+    if (!showHandles) ctx.setLineDash([6 / zoom, 4 / zoom])
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height)
+    ctx.setLineDash([])
+
+    if (!showHandles) return
 
     const topCenterX = shape.x + shape.width / 2
     ctx.beginPath()
@@ -197,7 +202,7 @@ export function Canvas(): React.JSX.Element {
     ctx.rect(0, 0, cw, ch)
     ctx.clip()
     for (const shape of shapesRef.current) {
-      if (shape.id === editingIdRef.current) continue
+      if (shape.id === editingIdRef.current || shape.hidden === true) continue
       const start = appearRef.current.get(shape.id)
       if (start === undefined) {
         drawShape(ctx, shape)
@@ -216,10 +221,17 @@ export function Canvas(): React.JSX.Element {
     ctx.restore()
 
     const selected = shapesRef.current.find((shape) => shape.id === selectedIdRef.current)
-    if (selected !== undefined) {
+    if (selected !== undefined && selected.id !== editingIdRef.current) {
       const t = clamp01((now - selectStartRef.current) / SELECT_MS)
       if (t < 1) animating = true
-      drawSelection(ctx, selected, easeOutCubic(t), z)
+      const showHandles = selected.locked !== true && selected.hidden !== true
+      drawSelection(
+        ctx,
+        selected,
+        easeOutCubic(t) * (selected.hidden === true ? 0.6 : 1),
+        z,
+        showHandles,
+      )
     }
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -398,7 +410,7 @@ export function Canvas(): React.JSX.Element {
     const point = toLogical(screen)
     const selected = shapes.find((shape) => shape.id === selectedId)
 
-    if (selected !== undefined) {
+    if (selected !== undefined && selected.locked !== true && selected.hidden !== true) {
       const handle = hitHandle(selected, point)
       if (handle === 'rotate') {
         beginChange()
@@ -420,7 +432,7 @@ export function Canvas(): React.JSX.Element {
       }
     }
 
-    const hit = findTopmostShapeAt(shapes, point)
+    const hit = findTopmostShapeAt(interactableShapes(), point)
     if (hit !== undefined) {
       selectShape(hit.id)
       beginChange()
@@ -437,13 +449,17 @@ export function Canvas(): React.JSX.Element {
     }
   }
 
+  function interactableShapes(): Shape[] {
+    return shapes.filter((shape) => shape.locked !== true && shape.hidden !== true)
+  }
+
   function updateCursor(canvas: HTMLCanvasElement, point: Point): void {
     if (spaceDownRef.current) {
       canvas.style.cursor = 'grab'
       return
     }
     const selected = shapes.find((shape) => shape.id === selectedId)
-    if (selected !== undefined) {
+    if (selected !== undefined && selected.locked !== true && selected.hidden !== true) {
       const handle = hitHandle(selected, point)
       if (handle === 'rotate') {
         canvas.style.cursor = 'grab'
@@ -454,7 +470,8 @@ export function Canvas(): React.JSX.Element {
         return
       }
     }
-    canvas.style.cursor = findTopmostShapeAt(shapes, point) !== undefined ? 'move' : 'default'
+    canvas.style.cursor =
+      findTopmostShapeAt(interactableShapes(), point) !== undefined ? 'move' : 'default'
   }
 
   function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>): void {
@@ -510,7 +527,7 @@ export function Canvas(): React.JSX.Element {
   function handleDoubleClick(event: React.MouseEvent<HTMLCanvasElement>): void {
     const rect = event.currentTarget.getBoundingClientRect()
     const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top }
-    const hit = findTopmostShapeAt(shapes, toLogical(screen))
+    const hit = findTopmostShapeAt(interactableShapes(), toLogical(screen))
     if (hit !== undefined && hit.kind === 'text') startTextEdit(hit.id, false)
   }
 

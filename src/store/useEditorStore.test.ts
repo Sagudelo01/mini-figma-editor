@@ -159,6 +159,18 @@ describe('layer order', () => {
     store.bringToFront(second!)
     expect(useEditorStore.getState().shapes.map((s) => s.id)).toEqual([first, second])
   })
+
+  it('toggles locked and hidden flags', () => {
+    const store = useEditorStore.getState()
+    store.addRectangle()
+    const id = useEditorStore.getState().shapes[0]!.id
+    store.toggleLocked(id)
+    expect(useEditorStore.getState().shapes[0]?.locked).toBe(true)
+    store.toggleHidden(id)
+    expect(useEditorStore.getState().shapes[0]?.hidden).toBe(true)
+    store.toggleLocked(id)
+    expect(useEditorStore.getState().shapes[0]?.locked).toBe(false)
+  })
 })
 
 describe('undo / redo', () => {

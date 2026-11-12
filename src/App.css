@@ -304,10 +304,123 @@
 .panel {
   width: 248px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
   padding: 1rem;
   background: var(--surface);
   border-left: 1px solid var(--border);
   overflow-y: auto;
+}
+
+.icon-row {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 32px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.icon-action:hover {
+  color: var(--text);
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+
+.icon-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Layers */
+.layers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.layer-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  border-radius: var(--radius-sm);
+}
+
+.layer-row.selected {
+  background: var(--accent-soft);
+}
+
+.layer-name {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.45rem;
+  text-align: left;
+  font-size: 0.82rem;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-name:hover {
+  background: var(--surface-3);
+}
+
+.layer-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  color: var(--text-faint);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease;
+}
+
+.layer-icon:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.layer-icon[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.layer-icon svg {
+  width: 15px;
+  height: 15px;
 }
 
 .properties {

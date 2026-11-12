@@ -41,6 +41,7 @@ export function drawShape(ctx: CanvasRenderingContext2D, shape: Shape): void {
 
 export function drawScene(ctx: CanvasRenderingContext2D, shapes: readonly Shape[]): void {
   for (const shape of shapes) {
+    if (shape.hidden === true) continue
     drawShape(ctx, shape)
   }
 }

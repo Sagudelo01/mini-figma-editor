@@ -3,7 +3,16 @@ import type { ShapePatch } from '../store/useEditorStore'
 import type { Shape, TextShape } from '../types'
 import { CANVAS_PRESETS, MIN_CANVAS_SIZE, MIN_FONT_SIZE, MIN_SIZE } from '../constants'
 import { textPatchWithBox } from '../lib/text'
-import { IconDuplicate, IconTrash } from './icons'
+import {
+  IconBack,
+  IconDuplicate,
+  IconEye,
+  IconEyeOff,
+  IconFront,
+  IconLock,
+  IconTrash,
+  IconUnlock,
+} from './icons'
 
 interface NumberFieldProps {
   label: string
@@ -112,6 +121,8 @@ function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
   const updateShape = useEditorStore((state) => state.updateShape)
   const deleteShape = useEditorStore((state) => state.deleteShape)
   const duplicateShape = useEditorStore((state) => state.duplicateShape)
+  const bringToFront = useEditorStore((state) => state.bringToFront)
+  const sendToBack = useEditorStore((state) => state.sendToBack)
   const beginChange = useEditorStore((state) => state.beginChange)
 
   const patch = (change: ShapePatch): void => updateShape(shape.id, change)
@@ -164,6 +175,27 @@ function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
         onCommit={(fill) => patch({ fill })}
       />
 
+      <div className="icon-row">
+        <button
+          type="button"
+          className="icon-action"
+          onClick={() => bringToFront(shape.id)}
+          aria-label="Bring to front"
+          title="Bring to front"
+        >
+          <IconFront />
+        </button>
+        <button
+          type="button"
+          className="icon-action"
+          onClick={() => sendToBack(shape.id)}
+          aria-label="Send to back"
+          title="Send to back"
+        >
+          <IconBack />
+        </button>
+      </div>
+
       <div className="panel-actions">
         <button type="button" className="ghost-button" onClick={() => duplicateShape(shape.id)}>
           <IconDuplicate />
@@ -174,6 +206,59 @@ function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
           Delete
         </button>
       </div>
+    </div>
+  )
+}
+
+function layerLabel(shape: Shape): string {
+  if (shape.kind === 'text') return shape.text.trim() === '' ? 'Text' : shape.text
+  return shape.kind.charAt(0).toUpperCase() + shape.kind.slice(1)
+}
+
+function LayersPanel(): React.JSX.Element | null {
+  const shapes = useEditorStore((state) => state.shapes)
+  const selectedId = useEditorStore((state) => state.selectedId)
+  const selectShape = useEditorStore((state) => state.selectShape)
+  const toggleLocked = useEditorStore((state) => state.toggleLocked)
+  const toggleHidden = useEditorStore((state) => state.toggleHidden)
+
+  if (shapes.length === 0) return null
+
+  return (
+    <div className="layers">
+      <div className="panel-section-title">Layers</div>
+      <ul className="layer-list">
+        {[...shapes].reverse().map((shape) => (
+          <li key={shape.id} className={`layer-row${shape.id === selectedId ? ' selected' : ''}`}>
+            <button
+              type="button"
+              className="layer-name"
+              onClick={() => selectShape(shape.id)}
+              title={layerLabel(shape)}
+            >
+              {layerLabel(shape)}
+            </button>
+            <button
+              type="button"
+              className="layer-icon"
+              aria-label={shape.hidden === true ? 'Show layer' : 'Hide layer'}
+              aria-pressed={shape.hidden === true}
+              onClick={() => toggleHidden(shape.id)}
+            >
+              {shape.hidden === true ? <IconEyeOff /> : <IconEye />}
+            </button>
+            <button
+              type="button"
+              className="layer-icon"
+              aria-label={shape.locked === true ? 'Unlock layer' : 'Lock layer'}
+              aria-pressed={shape.locked === true}
+              onClick={() => toggleLocked(shape.id)}
+            >
+              {shape.locked === true ? <IconLock /> : <IconUnlock />}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
@@ -250,6 +335,7 @@ export function PropertiesPanel(): React.JSX.Element {
   return (
     <aside className="panel" aria-label="Properties">
       {selected === undefined ? <CanvasProperties /> : <ShapeProperties shape={selected} />}
+      <LayersPanel />
     </aside>
   )
 }

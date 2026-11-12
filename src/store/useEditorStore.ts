@@ -55,6 +55,8 @@ interface EditorState {
   cancelTextEdit: (originalText: string) => void
   bringToFront: (id: string) => void
   sendToBack: (id: string) => void
+  toggleLocked: (id: string) => void
+  toggleHidden: (id: string) => void
   undo: () => void
   redo: () => void
 
@@ -289,6 +291,20 @@ export const useEditorStore = create<EditorState>()((set, get) => {
       if (shape === undefined || shapes[0]?.id === id) return
       get().beginChange()
       mutate({ shapes: [shape, ...shapes.filter((s) => s.id !== id)] })
+    },
+
+    toggleLocked: (id) => {
+      get().beginChange()
+      mutate({
+        shapes: get().shapes.map((s) => (s.id === id ? { ...s, locked: !s.locked } : s)),
+      })
+    },
+
+    toggleHidden: (id) => {
+      get().beginChange()
+      mutate({
+        shapes: get().shapes.map((s) => (s.id === id ? { ...s, hidden: !s.hidden } : s)),
+      })
     },
 
     undo: () =>

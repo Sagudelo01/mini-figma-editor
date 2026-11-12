@@ -10,6 +10,8 @@ export interface BaseShape {
   height: number
   rotation: number
   fill: string
+  locked?: boolean
+  hidden?: boolean
 }
 
 export interface RectangleShape extends BaseShape {
