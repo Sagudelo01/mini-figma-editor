@@ -23,6 +23,7 @@ import {
 } from '../lib/geometry'
 import { computeResize, computeRotation } from '../lib/transform'
 import { drawShape, withRotation } from '../lib/render'
+import { clampPan } from '../lib/view'
 
 interface View {
   zoom: number
@@ -303,11 +304,16 @@ export function Canvas(): React.JSX.Element {
     const canvas = canvasRef.current
     if (canvas === null) return
     const onWheel = (event: WheelEvent): void => {
-      if (!event.ctrlKey && !event.metaKey) return
       event.preventDefault()
-      const rect = canvas.getBoundingClientRect()
-      const factor = Math.exp(-event.deltaY * 0.0015)
-      useEditorStore.getState().zoomAt(factor, event.clientX - rect.left, event.clientY - rect.top)
+      const store = useEditorStore.getState()
+      if (event.ctrlKey || event.metaKey) {
+        const rect = canvas.getBoundingClientRect()
+        const factor = Math.exp(-event.deltaY * 0.0015)
+        store.zoomAt(factor, event.clientX - rect.left, event.clientY - rect.top)
+        return
+      }
+      const next = { x: store.pan.x - event.deltaX, y: store.pan.y - event.deltaY }
+      store.setPan(clampPan(next, store.zoom, store.viewport, store.canvas))
     }
     canvas.addEventListener('wheel', onWheel, { passive: false })
     return () => canvas.removeEventListener('wheel', onWheel)
@@ -452,10 +458,11 @@ export function Canvas(): React.JSX.Element {
     }
 
     if (interaction.kind === 'pan') {
-      setPan({
+      const next = {
         x: interaction.startPan.x + (screen.x - interaction.startScreen.x),
         y: interaction.startPan.y + (screen.y - interaction.startScreen.y),
-      })
+      }
+      setPan(clampPan(next, viewRef.current.zoom, viewportRef.current, canvasSizeRef.current))
       return
     }
 
