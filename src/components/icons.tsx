@@ -90,3 +90,53 @@ export const IconMoon = (p: SVGProps<SVGSVGElement>): React.JSX.Element => (
     <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
   </Icon>
 )
+
+export const IconHelp = (p: SVGProps<SVGSVGElement>): React.JSX.Element => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9.5a2.5 2.5 0 0 1 4.9.7c0 1.7-2.4 2-2.4 3.8" />
+    <path d="M12 17.5h.01" />
+  </Icon>
+)
+
+export const IconFront = (p: SVGProps<SVGSVGElement>): React.JSX.Element => (
+  <Icon {...p}>
+    <rect x="4" y="4" width="11" height="11" rx="1.5" />
+    <path d="M9 20h11V9" />
+  </Icon>
+)
+
+export const IconBack = (p: SVGProps<SVGSVGElement>): React.JSX.Element => (
+  <Icon {...p}>
+    <rect x="9" y="9" width="11" height="11" rx="1.5" />
+    <path d="M15 4H4v11" />
+  </Icon>
+)
+
+export const IconLock = (p: SVGProps<SVGSVGElement>): React.JSX.Element => (
+  <Icon {...p}>
+    <rect x="5" y="11" width="14" height="9" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </Icon>
+)
+
+export const IconUnlock = (p: SVGProps<SVGSVGElement>): React.JSX.Element => (
+  <Icon {...p}>
+    <rect x="5" y="11" width="14" height="9" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 7.5-2" />
+  </Icon>
+)
+
+export const IconEye = (p: SVGProps<SVGSVGElement>): React.JSX.Element => (
+  <Icon {...p}>
+    <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </Icon>
+)
+
+export const IconEyeOff = (p: SVGProps<SVGSVGElement>): React.JSX.Element => (
+  <Icon {...p}>
+    <path d="M10.6 6.2A9.6 9.6 0 0 1 12 6c6 0 10 7 10 7a15 15 0 0 1-3.4 3.9M6.2 6.6A15 15 0 0 0 2 13s4 7 10 7a9.4 9.4 0 0 0 4-.9" />
+    <path d="M3 3l18 18" />
+  </Icon>
+)

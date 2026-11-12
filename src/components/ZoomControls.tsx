@@ -8,8 +8,8 @@ export function ZoomControls(): React.JSX.Element {
   const reset = useEditorStore((state) => state.resetView)
 
   return (
-    <div className="zoom-controls">
-      <button className="zoom-btn" onClick={zoomOut} aria-label="Zoom out">
+    <div className="zoom-controls" title="Ctrl/Cmd + scroll to zoom, Space + drag to pan">
+      <button className="zoom-btn" onClick={zoomOut} aria-label="Zoom out" title="Zoom out">
         <IconZoomOut />
       </button>
       <button
@@ -20,7 +20,7 @@ export function ZoomControls(): React.JSX.Element {
       >
         {Math.round(zoom * 100)}%
       </button>
-      <button className="zoom-btn" onClick={zoomIn} aria-label="Zoom in">
+      <button className="zoom-btn" onClick={zoomIn} aria-label="Zoom in" title="Zoom in">
         <IconZoomIn />
       </button>
     </div>

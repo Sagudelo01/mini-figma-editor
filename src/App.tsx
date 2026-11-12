@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Canvas } from './components/Canvas'
 import { Toolbar } from './components/Toolbar'
 import { PropertiesPanel } from './components/PropertiesPanel'
 import { ZoomControls } from './components/ZoomControls'
 import { ThemeToggle } from './components/ThemeToggle'
+import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { TextEditor } from './components/TextEditor'
 import { useEditorStore } from './store/useEditorStore'
 import { saveDocument } from './lib/persistence'
@@ -13,14 +14,37 @@ function isTextEntry(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.tagName === 'INPUT' || target.isContentEditable)
 }
 
+const ARROW_DELTAS: Record<string, { x: number; y: number }> = {
+  ArrowLeft: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 },
+  ArrowUp: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 },
+}
+
 function App(): React.JSX.Element {
   const isEmpty = useEditorStore((state) => state.shapes.length === 0)
+  const nudgeAt = useRef(0)
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
       if (isTextEntry(event.target)) return
       const mod = event.metaKey || event.ctrlKey
       const store = useEditorStore.getState()
+
+      const delta = ARROW_DELTAS[event.key]
+      if (delta !== undefined && store.selectedId !== null && !mod) {
+        const shape = store.shapes.find((s) => s.id === store.selectedId)
+        if (shape !== undefined) {
+          event.preventDefault()
+          const now = Date.now()
+          // Group a burst of nudges into a single undo step.
+          if (now - nudgeAt.current > 600) store.beginChange()
+          nudgeAt.current = now
+          const step = event.shiftKey ? 10 : 1
+          store.updateShape(shape.id, { x: shape.x + delta.x * step, y: shape.y + delta.y * step })
+        }
+        return
+      }
 
       if (mod && event.key.toLowerCase() === 'z') {
         event.preventDefault()
@@ -83,6 +107,7 @@ function App(): React.JSX.Element {
         <div className="app-brand">Mini Figma</div>
         <Toolbar />
         <div className="app-header-end">
+          <ShortcutsHelp />
           <ThemeToggle />
         </div>
       </header>
