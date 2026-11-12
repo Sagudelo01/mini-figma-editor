@@ -10,28 +10,33 @@ A small Figma-like visual editor built with React, TypeScript and an HTML5 canva
 
 ## Features
 
-- **Shapes** — add rectangles, circles and text to the canvas; they animate in.
-- **Selection** — click to select the topmost shape under the cursor; click empty space to deselect.
-- **Transform** — drag a shape to move it, drag the corner handles to resize, and drag the rotation handle to rotate. Resizing and rotation are fully rotation-aware, so a rotated shape still scales along its own axes.
-- **Properties panel** — edit the selected shape's X, Y, width, height, rotation and fill color, with live updates. With nothing selected, the panel edits the artboard background color.
-- **Duplicate & delete** — duplicate the selection or remove it from the panel or the keyboard.
-- **Undo / redo** — history with per-gesture granularity, available from the toolbar and keyboard.
-- **Zoom & pan** — zoom the artboard toward the cursor, with `+`/`-` controls and a visible percentage; pan by dragging. Selection and transforms work at any zoom.
+- **Shapes** — add rectangles, circles and text; new shapes animate in.
+- **Transform** — drag to move, drag the corner handles to resize, and drag the rotation handle to rotate. Resizing and rotation are rotation-aware, so a rotated shape still scales along its own axes.
+- **Text editing** — double-click a text to edit it in place; the box hugs its content, with font size, weight and color controls.
+- **Properties panel** — edit the selection's position, size, rotation and fill with live updates. With nothing selected it edits the artboard background.
+- **Artboard** — set the canvas width and height or pick a preset (square, 1920×1080, 1280×720, A4); resizing never distorts the shapes.
+- **Layers** — a layer list to select, reorder (bring to front / send to back), lock and hide shapes.
+- **Zoom & pan** — zoom toward the cursor with `Ctrl`+scroll or the `+`/`-` controls, pan with the wheel or by dragging. Selection and transforms work at any zoom.
+- **Undo / redo** — history with per-gesture granularity, from the toolbar or keyboard.
+- **Persistence** — the design, artboard size and theme are saved to `localStorage` and restored on reload.
 - **Theme** — switch between light and dark; the choice is remembered.
-- **Export** — download the artboard as a 2× PNG, always at 100% regardless of the current zoom.
+- **Export** — download the artboard as a 2× PNG, always rendered at 100%.
 
 ## Keyboard shortcuts
 
-| Action        | Shortcut                                           |
-| ------------- | -------------------------------------------------- |
-| Undo          | `Ctrl/Cmd + Z`                                     |
-| Redo          | `Ctrl/Cmd + Shift + Z` or `Ctrl + Y`               |
-| Duplicate     | `Ctrl/Cmd + D`                                     |
-| Delete shape  | `Delete` or `Backspace`                            |
-| Zoom in / out | `Ctrl/Cmd + scroll`                                |
-| Reset zoom    | `Ctrl/Cmd + 0`                                     |
-| Pan canvas    | Drag with `Space` held, or the middle mouse button |
-| Snap rotation | Hold `Shift` while rotating (15°)                  |
+| Action          | Shortcut                                           |
+| --------------- | -------------------------------------------------- |
+| Edit text       | Double-click a text                                |
+| Move selection  | Arrow keys (`Shift` = 10px)                        |
+| Duplicate       | `Ctrl/Cmd + D`                                     |
+| Delete          | `Delete` or `Backspace`                            |
+| Undo            | `Ctrl/Cmd + Z`                                     |
+| Redo            | `Ctrl/Cmd + Shift + Z` or `Ctrl + Y`               |
+| Zoom to cursor  | `Ctrl/Cmd + scroll`                                |
+| Reset zoom      | `Ctrl/Cmd + 0`                                     |
+| Pan canvas      | Drag with `Space` held, or the middle mouse button |
+| Snap rotation   | Hold `Shift` while rotating (15°)                  |
+| Shortcuts panel | `?`                                                |
 
 ## Tech stack
 
@@ -77,7 +82,7 @@ npm run preview   # serve the production build locally
 
 ## Testing
 
-Tests run on Vitest with a jsdom environment and React Testing Library. They cover the geometry and transform math (including rotated hit-testing and resizing), the Zustand store (create / update / delete and undo/redo), and the UI components.
+Tests run on Vitest with a jsdom environment and React Testing Library. They cover the geometry and transform math (including rotated hit-testing and resizing), pan clamping, text measuring, localStorage persistence, the Zustand store (shapes, text editing, layers, canvas size and undo/redo) and the UI components.
 
 ```bash
 npm run test:run
@@ -88,23 +93,32 @@ npm run test:run
 ```
 src/
 ├── components/
-│   ├── Canvas.tsx            # canvas rendering + pointer interactions
+│   ├── Canvas.tsx            # canvas rendering, view transform and pointer input
 │   ├── Toolbar.tsx           # create shapes, undo/redo, export
-│   └── PropertiesPanel.tsx   # edit the selected shape
+│   ├── PropertiesPanel.tsx   # shape, artboard and layer controls
+│   ├── TextEditor.tsx        # in-place text editing overlay
+│   ├── ZoomControls.tsx      # zoom buttons and percentage
+│   ├── ShortcutsHelp.tsx     # keyboard shortcuts panel
+│   ├── ThemeToggle.tsx       # light/dark toggle
+│   └── icons.tsx             # inline SVG icons
 ├── lib/
 │   ├── geometry.ts           # centers, corners, rotation-aware hit testing
 │   ├── transform.ts          # resize and rotation math
 │   ├── render.ts             # shared shape drawing
-│   └── exportPng.ts          # PNG export
+│   ├── text.ts               # text measuring / box fitting
+│   ├── view.ts               # pan clamping
+│   ├── exportPng.ts          # PNG export
+│   ├── persistence.ts        # localStorage autosave
+│   └── theme.ts              # theme persistence
 ├── store/
-│   └── useEditorStore.ts     # Zustand store with history
+│   └── useEditorStore.ts     # Zustand store with history and view state
 ├── constants.ts
 └── types.ts
 ```
 
 ## How it works
 
-Shapes are plain data in a Zustand store (position, size, rotation and fill). The canvas redraws the whole scene on every state change, applying each shape's rotation around its center. Pointer interactions are translated into store updates: hit-testing maps the pointer into each shape's local, unrotated space so selection, resizing and rotation behave correctly at any angle. History snapshots are taken at the start of each gesture, so a single undo reverts a complete move, resize or rotate.
+Shapes are plain data in a Zustand store. The canvas redraws the whole scene on every change inside a pan/zoom view transform, applying each shape's rotation around its center. Pointer input is mapped back through the inverse transform into each shape's local, unrotated space, so selection, resizing and rotation behave correctly at any zoom or angle. History snapshots are taken at the start of each gesture, so a single undo reverts a complete move, resize or rotate; the view and editing state stay out of history. The document autosaves to `localStorage` and is restored on load.
 
 ## License
 
