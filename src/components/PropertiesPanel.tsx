@@ -1,7 +1,8 @@
 import { useEditorStore } from '../store/useEditorStore'
 import type { ShapePatch } from '../store/useEditorStore'
-import type { Shape } from '../types'
-import { CANVAS_PRESETS, MIN_CANVAS_SIZE, MIN_SIZE } from '../constants'
+import type { Shape, TextShape } from '../types'
+import { CANVAS_PRESETS, MIN_CANVAS_SIZE, MIN_FONT_SIZE, MIN_SIZE } from '../constants'
+import { textPatchWithBox } from '../lib/text'
 import { IconDuplicate, IconTrash } from './icons'
 
 interface NumberFieldProps {
@@ -61,6 +62,52 @@ function ColorField({ label, value, onBeginChange, onCommit }: ColorFieldProps):
   )
 }
 
+function TextFields({ shape }: { shape: TextShape }): React.JSX.Element {
+  const updateShape = useEditorStore((state) => state.updateShape)
+  const beginChange = useEditorStore((state) => state.beginChange)
+
+  const apply = (change: Partial<Pick<TextShape, 'text' | 'fontSize' | 'bold'>>): void =>
+    updateShape(shape.id, textPatchWithBox(shape, change))
+
+  return (
+    <>
+      <label className="field">
+        <span className="field-label">Content</span>
+        <input
+          type="text"
+          value={shape.text}
+          onFocus={beginChange}
+          onChange={(event) => apply({ text: event.target.value })}
+        />
+      </label>
+
+      <div className="field-grid">
+        <NumberField
+          label="Font size"
+          value={shape.fontSize}
+          min={MIN_FONT_SIZE}
+          onBeginChange={beginChange}
+          onCommit={(fontSize) => apply({ fontSize: Math.max(MIN_FONT_SIZE, fontSize) })}
+        />
+        <div className="field">
+          <span className="field-label">Weight</span>
+          <button
+            type="button"
+            className="toggle-button"
+            aria-pressed={shape.bold}
+            onClick={() => {
+              beginChange()
+              apply({ bold: !shape.bold })
+            }}
+          >
+            Bold
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
   const updateShape = useEditorStore((state) => state.updateShape)
   const deleteShape = useEditorStore((state) => state.deleteShape)
@@ -107,6 +154,8 @@ function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
           onCommit={(rotation) => patch({ rotation })}
         />
       </div>
+
+      {shape.kind === 'text' && <TextFields shape={shape} />}
 
       <ColorField
         label="Fill"

@@ -139,6 +139,7 @@ export function Canvas(): React.JSX.Element {
 
   const shapes = useEditorStore((state) => state.shapes)
   const selectedId = useEditorStore((state) => state.selectedId)
+  const editingId = useEditorStore((state) => state.editingId)
   const background = useEditorStore((state) => state.background)
   const zoom = useEditorStore((state) => state.zoom)
   const pan = useEditorStore((state) => state.pan)
@@ -148,9 +149,11 @@ export function Canvas(): React.JSX.Element {
   const updateShape = useEditorStore((state) => state.updateShape)
   const beginChange = useEditorStore((state) => state.beginChange)
   const setPan = useEditorStore((state) => state.setPan)
+  const startTextEdit = useEditorStore((state) => state.startTextEdit)
 
   const shapesRef = useRef(shapes)
   const selectedIdRef = useRef(selectedId)
+  const editingIdRef = useRef(editingId)
   const backgroundRef = useRef(background)
   const viewRef = useRef<View>({ zoom, pan })
   const viewportRef = useRef(viewport)
@@ -194,6 +197,7 @@ export function Canvas(): React.JSX.Element {
     ctx.rect(0, 0, cw, ch)
     ctx.clip()
     for (const shape of shapesRef.current) {
+      if (shape.id === editingIdRef.current) continue
       const start = appearRef.current.get(shape.id)
       if (start === undefined) {
         drawShape(ctx, shape)
@@ -291,6 +295,11 @@ export function Canvas(): React.JSX.Element {
     selectStartRef.current = performance.now()
     render()
   }, [selectedId, render])
+
+  useEffect(() => {
+    editingIdRef.current = editingId
+    render()
+  }, [editingId, render])
 
   useEffect(() => {
     viewRef.current = { zoom, pan }
@@ -498,6 +507,13 @@ export function Canvas(): React.JSX.Element {
     updateCursor(event.currentTarget, toLogical(getScreenPoint(event)))
   }
 
+  function handleDoubleClick(event: React.MouseEvent<HTMLCanvasElement>): void {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+    const hit = findTopmostShapeAt(shapes, toLogical(screen))
+    if (hit !== undefined && hit.kind === 'text') startTextEdit(hit.id, false)
+  }
+
   return (
     <canvas
       ref={canvasRef}
@@ -506,6 +522,7 @@ export function Canvas(): React.JSX.Element {
       onPointerMove={handlePointerMove}
       onPointerUp={endInteraction}
       onPointerCancel={endInteraction}
+      onDoubleClick={handleDoubleClick}
     />
   )
 }

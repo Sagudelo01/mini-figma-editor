@@ -1,3 +1,4 @@
+import type { TextShape } from '../types'
 import { textFont } from './render'
 
 let cachedCtx: CanvasRenderingContext2D | null | undefined
@@ -23,4 +24,15 @@ export function measureTextBox(
   }
   ctx.font = textFont({ fontSize, bold })
   return { width: Math.ceil(ctx.measureText(content).width) + 2, height }
+}
+
+/** Merges text changes and recomputes the box so it hugs the new content. */
+export function textPatchWithBox(
+  current: TextShape,
+  changes: Partial<Pick<TextShape, 'text' | 'fontSize' | 'bold'>>,
+): Partial<Pick<TextShape, 'text' | 'fontSize' | 'bold' | 'width' | 'height'>> {
+  const text = changes.text ?? current.text
+  const fontSize = changes.fontSize ?? current.fontSize
+  const bold = changes.bold ?? current.bold
+  return { ...changes, ...measureTextBox(text, fontSize, bold) }
 }

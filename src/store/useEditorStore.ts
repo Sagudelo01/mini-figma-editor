@@ -29,6 +29,8 @@ interface Snapshot {
 interface EditorState {
   shapes: Shape[]
   selectedId: string | null
+  editingId: string | null
+  editingIsNew: boolean
   background: string
   canvas: CanvasSize
   past: Snapshot[]
@@ -47,6 +49,9 @@ interface EditorState {
   setBackground: (color: string) => void
   setCanvasSize: (width: number, height: number) => void
   deleteShape: (id: string) => void
+  startTextEdit: (id: string, isNew: boolean) => void
+  finishTextEdit: () => void
+  cancelTextEdit: (originalText: string) => void
   bringToFront: (id: string) => void
   sendToBack: (id: string) => void
   undo: () => void
@@ -129,6 +134,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
   return {
     shapes: initialShapes,
     selectedId: null,
+    editingId: null,
+    editingIsNew: false,
     background: '#ffffff',
     canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
     past: [],
@@ -186,6 +193,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         fontSize,
         bold: false,
       } satisfies TextShape)
+      set({ editingId: id, editingIsNew: true })
       return id
     },
 
@@ -232,6 +240,37 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         selectedId: selectedId === id ? null : selectedId,
       })
     },
+
+    startTextEdit: (id, isNew) => set({ editingId: id, editingIsNew: isNew, selectedId: id }),
+
+    finishTextEdit: () =>
+      set((state) => {
+        if (state.editingId === null) return state
+        const shape = state.shapes.find((s) => s.id === state.editingId)
+        const isEmpty = shape?.kind === 'text' && shape.text.trim() === ''
+        return {
+          editingId: null,
+          editingIsNew: false,
+          shapes: isEmpty ? state.shapes.filter((s) => s.id !== state.editingId) : state.shapes,
+          selectedId: isEmpty && state.selectedId === state.editingId ? null : state.selectedId,
+        }
+      }),
+
+    cancelTextEdit: (originalText) =>
+      set((state) => {
+        if (state.editingId === null) return state
+        const remove = state.editingIsNew || originalText.trim() === ''
+        return {
+          editingId: null,
+          editingIsNew: false,
+          shapes: remove
+            ? state.shapes.filter((s) => s.id !== state.editingId)
+            : state.shapes.map((s) =>
+                s.id === state.editingId && s.kind === 'text' ? { ...s, text: originalText } : s,
+              ),
+          selectedId: remove && state.selectedId === state.editingId ? null : state.selectedId,
+        }
+      }),
 
     bringToFront: (id) => {
       const { shapes } = get()

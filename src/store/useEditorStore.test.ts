@@ -5,6 +5,8 @@ function reset(): void {
   useEditorStore.setState({
     shapes: [],
     selectedId: null,
+    editingId: null,
+    editingIsNew: false,
     background: '#ffffff',
     canvas: { width: 800, height: 600 },
     past: [],
@@ -106,6 +108,41 @@ describe('canvas size', () => {
   it('clamps the size to the minimum', () => {
     useEditorStore.getState().setCanvasSize(5, 5)
     expect(useEditorStore.getState().canvas).toEqual({ width: 50, height: 50 })
+  })
+})
+
+describe('text editing', () => {
+  it('addText creates a text shape and starts editing it', () => {
+    const id = useEditorStore.getState().addText()
+    const state = useEditorStore.getState()
+    expect(state.editingId).toBe(id)
+    expect(state.editingIsNew).toBe(true)
+    expect(state.shapes[0]?.kind).toBe('text')
+  })
+
+  it('finishTextEdit removes a text left empty', () => {
+    const id = useEditorStore.getState().addText()
+    useEditorStore.getState().updateShape(id, { text: '' })
+    useEditorStore.getState().finishTextEdit()
+    const state = useEditorStore.getState()
+    expect(state.editingId).toBeNull()
+    expect(state.shapes).toHaveLength(0)
+  })
+
+  it('cancelTextEdit discards a freshly created text', () => {
+    useEditorStore.getState().addText()
+    useEditorStore.getState().cancelTextEdit('Text')
+    expect(useEditorStore.getState().shapes).toHaveLength(0)
+  })
+
+  it('cancelTextEdit restores the original text of an existing shape', () => {
+    const id = useEditorStore.getState().addText()
+    useEditorStore.getState().finishTextEdit()
+    useEditorStore.getState().startTextEdit(id, false)
+    useEditorStore.getState().updateShape(id, { text: 'changed' })
+    useEditorStore.getState().cancelTextEdit('Text')
+    const shape = useEditorStore.getState().shapes[0]
+    expect(shape?.kind === 'text' && shape.text).toBe('Text')
   })
 })
 

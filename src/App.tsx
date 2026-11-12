@@ -4,6 +4,7 @@ import { Toolbar } from './components/Toolbar'
 import { PropertiesPanel } from './components/PropertiesPanel'
 import { ZoomControls } from './components/ZoomControls'
 import { ThemeToggle } from './components/ThemeToggle'
+import { TextEditor } from './components/TextEditor'
 import { useEditorStore } from './store/useEditorStore'
 import './App.css'
 
@@ -66,6 +67,7 @@ function App(): React.JSX.Element {
       <div className="app-body">
         <main className="app-main">
           <Canvas />
+          <TextEditor />
           {isEmpty && (
             <div className="canvas-hint" aria-hidden="true">
               Add a shape from the toolbar to get started
