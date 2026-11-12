@@ -116,8 +116,9 @@ function App(): React.JSX.Element {
           <Canvas />
           <TextEditor />
           {isEmpty && (
-            <div className="canvas-hint" aria-hidden="true">
-              Add a shape from the toolbar to get started
+            <div className="empty-state" aria-hidden="true">
+              <p className="empty-title">Start designing</p>
+              <p className="empty-sub">Add a rectangle, circle or text from the toolbar.</p>
             </div>
           )}
           <ZoomControls />
