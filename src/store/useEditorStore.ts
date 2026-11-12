@@ -9,6 +9,7 @@ import {
   ZOOM_MIN,
   ZOOM_STEP,
 } from '../constants'
+import { loadDocument } from '../lib/persistence'
 
 export type ShapePatch = Partial<
   Pick<BaseShape, 'x' | 'y' | 'width' | 'height' | 'rotation' | 'fill'> &
@@ -121,6 +122,8 @@ const initialShapes: Shape[] = [
   },
 ]
 
+const saved = loadDocument()
+
 export const useEditorStore = create<EditorState>()((set, get) => {
   function mutate(partial: Partial<EditorState>): void {
     set((state) => ({ ...partial, rev: state.rev + 1 }))
@@ -132,12 +135,12 @@ export const useEditorStore = create<EditorState>()((set, get) => {
   }
 
   return {
-    shapes: initialShapes,
+    shapes: saved?.shapes ?? initialShapes,
     selectedId: null,
     editingId: null,
     editingIsNew: false,
-    background: '#ffffff',
-    canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
+    background: saved?.background ?? '#ffffff',
+    canvas: saved?.canvas ?? { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
     past: [],
     future: [],
     rev: 0,

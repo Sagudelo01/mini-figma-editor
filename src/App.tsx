@@ -6,6 +6,7 @@ import { ZoomControls } from './components/ZoomControls'
 import { ThemeToggle } from './components/ThemeToggle'
 import { TextEditor } from './components/TextEditor'
 import { useEditorStore } from './store/useEditorStore'
+import { saveDocument } from './lib/persistence'
 import './App.css'
 
 function isTextEntry(target: EventTarget | null): boolean {
@@ -53,6 +54,27 @@ function App(): React.JSX.Element {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  useEffect(() => {
+    let timer: number | undefined
+    const unsubscribe = useEditorStore.subscribe((state, prev) => {
+      if (
+        state.shapes === prev.shapes &&
+        state.canvas === prev.canvas &&
+        state.background === prev.background
+      ) {
+        return
+      }
+      clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        saveDocument({ shapes: state.shapes, canvas: state.canvas, background: state.background })
+      }, 300)
+    })
+    return () => {
+      clearTimeout(timer)
+      unsubscribe()
+    }
   }, [])
 
   return (
