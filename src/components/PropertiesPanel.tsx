@@ -1,7 +1,7 @@
 import { useEditorStore } from '../store/useEditorStore'
 import type { ShapePatch } from '../store/useEditorStore'
 import type { Shape } from '../types'
-import { MIN_SIZE } from '../constants'
+import { CANVAS_PRESETS, MIN_CANVAS_SIZE, MIN_SIZE } from '../constants'
 import { IconDuplicate, IconTrash } from './icons'
 
 interface NumberFieldProps {
@@ -131,18 +131,63 @@ function ShapeProperties({ shape }: { shape: Shape }): React.JSX.Element {
 
 function CanvasProperties(): React.JSX.Element {
   const background = useEditorStore((state) => state.background)
+  const canvas = useEditorStore((state) => state.canvas)
   const setBackground = useEditorStore((state) => state.setBackground)
+  const setCanvasSize = useEditorStore((state) => state.setCanvasSize)
+  const resetView = useEditorStore((state) => state.resetView)
   const beginChange = useEditorStore((state) => state.beginChange)
+
+  const applyPreset = (width: number, height: number): void => {
+    beginChange()
+    setCanvasSize(width, height)
+    resetView()
+  }
 
   return (
     <div className="properties">
       <div className="panel-section-title">Canvas</div>
+
+      <div className="field-grid">
+        <NumberField
+          label="W"
+          value={canvas.width}
+          min={MIN_CANVAS_SIZE}
+          onBeginChange={beginChange}
+          onCommit={(width) => setCanvasSize(width, canvas.height)}
+        />
+        <NumberField
+          label="H"
+          value={canvas.height}
+          min={MIN_CANVAS_SIZE}
+          onBeginChange={beginChange}
+          onCommit={(height) => setCanvasSize(canvas.width, height)}
+        />
+      </div>
+
+      <div className="field">
+        <span className="field-label">Presets</span>
+        <div className="preset-list">
+          {CANVAS_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              className="preset-button"
+              aria-pressed={canvas.width === preset.width && canvas.height === preset.height}
+              onClick={() => applyPreset(preset.width, preset.height)}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <ColorField
         label="Background"
         value={background}
         onBeginChange={beginChange}
         onCommit={setBackground}
       />
+
       <p className="panel-hint">Select a shape to edit it.</p>
     </div>
   )

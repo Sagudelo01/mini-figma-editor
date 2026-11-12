@@ -4,8 +4,6 @@ import type { Shape } from '../types'
 import {
   APPEAR_MS,
   APPEAR_START_SCALE,
-  CANVAS_HEIGHT,
-  CANVAS_WIDTH,
   HANDLE_HIT_RADIUS,
   HANDLE_SIZE,
   ROTATE_HANDLE_OFFSET,
@@ -144,6 +142,7 @@ export function Canvas(): React.JSX.Element {
   const zoom = useEditorStore((state) => state.zoom)
   const pan = useEditorStore((state) => state.pan)
   const viewport = useEditorStore((state) => state.viewport)
+  const canvasSize = useEditorStore((state) => state.canvas)
   const selectShape = useEditorStore((state) => state.selectShape)
   const updateShape = useEditorStore((state) => state.updateShape)
   const beginChange = useEditorStore((state) => state.beginChange)
@@ -154,6 +153,7 @@ export function Canvas(): React.JSX.Element {
   const backgroundRef = useRef(background)
   const viewRef = useRef<View>({ zoom, pan })
   const viewportRef = useRef(viewport)
+  const canvasSizeRef = useRef(canvasSize)
 
   const appearRef = useRef<Map<string, number>>(new Map())
   const prevIdsRef = useRef<Set<string>>(new Set())
@@ -173,6 +173,7 @@ export function Canvas(): React.JSX.Element {
     ctx.clearRect(0, 0, w, h)
 
     const { zoom: z, pan: p } = viewRef.current
+    const { width: cw, height: ch } = canvasSizeRef.current
     ctx.translate(p.x, p.y)
     ctx.scale(z, z)
 
@@ -182,14 +183,14 @@ export function Canvas(): React.JSX.Element {
     ctx.shadowBlur = 24 / z
     ctx.shadowOffsetY = 8 / z
     ctx.fillStyle = backgroundRef.current
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    ctx.fillRect(0, 0, cw, ch)
     ctx.restore()
 
     let animating = false
 
     ctx.save()
     ctx.beginPath()
-    ctx.rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    ctx.rect(0, 0, cw, ch)
     ctx.clip()
     for (const shape of shapesRef.current) {
       const start = appearRef.current.get(shape.id)
@@ -293,8 +294,9 @@ export function Canvas(): React.JSX.Element {
   useEffect(() => {
     viewRef.current = { zoom, pan }
     viewportRef.current = viewport
+    canvasSizeRef.current = canvasSize
     render()
-  }, [zoom, pan, viewport, render])
+  }, [zoom, pan, viewport, canvasSize, render])
 
   // Ctrl/Cmd + wheel zooms toward the cursor without zooming the page.
   useEffect(() => {

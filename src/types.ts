@@ -24,6 +24,7 @@ export interface TextShape extends BaseShape {
   kind: 'text'
   text: string
   fontSize: number
+  bold: boolean
 }
 
 export type Shape = RectangleShape | CircleShape | TextShape

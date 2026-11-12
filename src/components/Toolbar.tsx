@@ -12,6 +12,7 @@ export function Toolbar(): React.JSX.Element {
   const canRedo = useEditorStore((state) => state.future.length > 0)
   const shapes = useEditorStore((state) => state.shapes)
   const background = useEditorStore((state) => state.background)
+  const canvas = useEditorStore((state) => state.canvas)
 
   return (
     <div className="toolbar" role="toolbar" aria-label="Editor actions">
@@ -59,7 +60,7 @@ export function Toolbar(): React.JSX.Element {
 
       <button
         className="tool-btn"
-        onClick={() => exportToPng(shapes, background)}
+        onClick={() => exportToPng(shapes, background, canvas)}
         disabled={shapes.length === 0}
         aria-label="Export PNG"
         data-tooltip="Export PNG"

@@ -11,6 +11,19 @@ export const ROTATE_HANDLE_RADIUS = 6
 
 export const MIN_SIZE = 10
 
+/** Smallest artboard dimension and the minimum font size for text. */
+export const MIN_CANVAS_SIZE = 50
+export const MIN_FONT_SIZE = 8
+
+/** Artboard size presets offered in the Canvas panel. */
+export const CANVAS_PRESETS: { label: string; width: number; height: number }[] = [
+  { label: '800 × 600', width: 800, height: 600 },
+  { label: 'Square 1080', width: 1080, height: 1080 },
+  { label: '1920 × 1080', width: 1920, height: 1080 },
+  { label: '1280 × 720', width: 1280, height: 720 },
+  { label: 'A4', width: 794, height: 1123 },
+]
+
 /** Shape appearance animation (ms) and its starting scale. */
 export const APPEAR_MS = 220
 export const APPEAR_START_SCALE = 0.85

@@ -8,6 +8,7 @@ beforeEach(() => {
     shapes: [],
     selectedId: null,
     background: '#ffffff',
+    canvas: { width: 800, height: 600 },
     past: [],
     future: [],
     rev: 0,

@@ -4,24 +4,33 @@ import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   DEFAULT_FILL,
+  MIN_CANVAS_SIZE,
   ZOOM_MAX,
   ZOOM_MIN,
   ZOOM_STEP,
 } from '../constants'
 
 export type ShapePatch = Partial<
-  Pick<BaseShape, 'x' | 'y' | 'width' | 'height' | 'rotation' | 'fill'>
+  Pick<BaseShape, 'x' | 'y' | 'width' | 'height' | 'rotation' | 'fill'> &
+    Pick<TextShape, 'text' | 'fontSize' | 'bold'>
 >
+
+export interface CanvasSize {
+  width: number
+  height: number
+}
 
 interface Snapshot {
   shapes: Shape[]
   background: string
+  canvas: CanvasSize
 }
 
 interface EditorState {
   shapes: Shape[]
   selectedId: string | null
   background: string
+  canvas: CanvasSize
   past: Snapshot[]
   future: Snapshot[]
   // Revision bumped on every mutation; beginChange compares it to the revision
@@ -30,13 +39,16 @@ interface EditorState {
   snapshotRev: number
   addRectangle: () => void
   addCircle: () => void
-  addText: () => void
+  addText: () => string
   duplicateShape: (id: string) => void
   selectShape: (id: string | null) => void
   beginChange: () => void
   updateShape: (id: string, patch: ShapePatch) => void
   setBackground: (color: string) => void
+  setCanvasSize: (width: number, height: number) => void
   deleteShape: (id: string) => void
+  bringToFront: (id: string) => void
+  sendToBack: (id: string) => void
   undo: () => void
   redo: () => void
 
@@ -57,20 +69,29 @@ function clampZoom(zoom: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom))
 }
 
-function centerPan(w: number, h: number, zoom: number): { x: number; y: number } {
-  return { x: (w - CANVAS_WIDTH * zoom) / 2, y: (h - CANVAS_HEIGHT * zoom) / 2 }
+function centerPan(
+  viewportW: number,
+  viewportH: number,
+  zoom: number,
+  canvas: CanvasSize,
+): { x: number; y: number } {
+  return { x: (viewportW - canvas.width * zoom) / 2, y: (viewportH - canvas.height * zoom) / 2 }
 }
 
 // Staircase successive shapes so they don't spawn exactly on top of each other.
 let spawnIndex = 0
 
-function spawnPosition(width: number, height: number): { x: number; y: number } {
+function spawnPosition(
+  canvas: CanvasSize,
+  width: number,
+  height: number,
+): { x: number; y: number } {
   const step = 24
   const offset = (spawnIndex % 6) * step
   spawnIndex += 1
   return {
-    x: Math.round((CANVAS_WIDTH - width) / 2 + offset - step * 2.5),
-    y: Math.round((CANVAS_HEIGHT - height) / 2 + offset - step * 2.5),
+    x: Math.round((canvas.width - width) / 2 + offset - step * 2.5),
+    y: Math.round((canvas.height - height) / 2 + offset - step * 2.5),
   }
 }
 
@@ -109,6 +130,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     shapes: initialShapes,
     selectedId: null,
     background: '#ffffff',
+    canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
     past: [],
     future: [],
     rev: 0,
@@ -117,7 +139,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     addRectangle: () => {
       const width = 160
       const height = 120
-      const { x, y } = spawnPosition(width, height)
+      const { x, y } = spawnPosition(get().canvas, width, height)
       addShape({
         id: createId(),
         kind: 'rectangle',
@@ -132,7 +154,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
 
     addCircle: () => {
       const size = 140
-      const { x, y } = spawnPosition(size, size)
+      const { x, y } = spawnPosition(get().canvas, size, size)
       addShape({
         id: createId(),
         kind: 'circle',
@@ -148,10 +170,11 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     addText: () => {
       const fontSize = 32
       const width = 160
-      const height = Math.round(fontSize * 1.2)
-      const { x, y } = spawnPosition(width, height)
+      const height = Math.round(fontSize * 1.3)
+      const { x, y } = spawnPosition(get().canvas, width, height)
+      const id = createId()
       addShape({
-        id: createId(),
+        id,
         kind: 'text',
         x,
         y,
@@ -161,7 +184,9 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         fill: '#111827',
         text: 'Text',
         fontSize,
+        bold: false,
       } satisfies TextShape)
+      return id
     },
 
     duplicateShape: (id) => {
@@ -175,9 +200,13 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     selectShape: (id) => set({ selectedId: id }),
 
     beginChange: () => {
-      const { rev, snapshotRev, past, shapes, background } = get()
+      const { rev, snapshotRev, past, shapes, background, canvas } = get()
       if (rev === snapshotRev) return
-      set({ past: [...past, { shapes: clone(shapes), background }], future: [], snapshotRev: rev })
+      set({
+        past: [...past, { shapes: clone(shapes), background, canvas }],
+        future: [],
+        snapshotRev: rev,
+      })
     },
 
     updateShape: (id, patch) =>
@@ -186,6 +215,14 @@ export const useEditorStore = create<EditorState>()((set, get) => {
       }),
 
     setBackground: (color) => mutate({ background: color }),
+
+    setCanvasSize: (width, height) =>
+      mutate({
+        canvas: {
+          width: Math.max(MIN_CANVAS_SIZE, Math.round(width)),
+          height: Math.max(MIN_CANVAS_SIZE, Math.round(height)),
+        },
+      }),
 
     deleteShape: (id) => {
       get().beginChange()
@@ -196,6 +233,22 @@ export const useEditorStore = create<EditorState>()((set, get) => {
       })
     },
 
+    bringToFront: (id) => {
+      const { shapes } = get()
+      const shape = shapes.find((s) => s.id === id)
+      if (shape === undefined || shapes[shapes.length - 1]?.id === id) return
+      get().beginChange()
+      mutate({ shapes: [...shapes.filter((s) => s.id !== id), shape] })
+    },
+
+    sendToBack: (id) => {
+      const { shapes } = get()
+      const shape = shapes.find((s) => s.id === id)
+      if (shape === undefined || shapes[0]?.id === id) return
+      get().beginChange()
+      mutate({ shapes: [shape, ...shapes.filter((s) => s.id !== id)] })
+    },
+
     undo: () =>
       set((state) => {
         const prev = state.past.at(-1)
@@ -204,8 +257,12 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         return {
           shapes: prev.shapes,
           background: prev.background,
+          canvas: prev.canvas,
           past: state.past.slice(0, -1),
-          future: [...state.future, { shapes: clone(state.shapes), background: state.background }],
+          future: [
+            ...state.future,
+            { shapes: clone(state.shapes), background: state.background, canvas: state.canvas },
+          ],
           selectedId: prev.shapes.some((s) => s.id === state.selectedId) ? state.selectedId : null,
           rev,
           snapshotRev: rev,
@@ -220,7 +277,11 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         return {
           shapes: next.shapes,
           background: next.background,
-          past: [...state.past, { shapes: clone(state.shapes), background: state.background }],
+          canvas: next.canvas,
+          past: [
+            ...state.past,
+            { shapes: clone(state.shapes), background: state.background, canvas: state.canvas },
+          ],
           future: state.future.slice(0, -1),
           selectedId: next.shapes.some((s) => s.id === state.selectedId) ? state.selectedId : null,
           rev,
@@ -237,7 +298,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
       set((state) =>
         state.viewReady
           ? { viewport: { w, h } }
-          : { viewport: { w, h }, viewReady: true, pan: centerPan(w, h, state.zoom) },
+          : { viewport: { w, h }, viewReady: true, pan: centerPan(w, h, state.zoom, state.canvas) },
       ),
 
     setPan: (pan) => set({ pan }),
@@ -261,6 +322,9 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     },
 
     resetView: () =>
-      set((state) => ({ zoom: 1, pan: centerPan(state.viewport.w, state.viewport.h, 1) })),
+      set((state) => ({
+        zoom: 1,
+        pan: centerPan(state.viewport.w, state.viewport.h, 1, state.canvas),
+      })),
   }
 })

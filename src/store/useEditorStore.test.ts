@@ -6,6 +6,7 @@ function reset(): void {
     shapes: [],
     selectedId: null,
     background: '#ffffff',
+    canvas: { width: 800, height: 600 },
     past: [],
     future: [],
     rev: 0,
@@ -82,6 +83,44 @@ describe('background', () => {
 
     store.undo()
     expect(useEditorStore.getState().background).toBe('#ffffff')
+  })
+})
+
+describe('canvas size', () => {
+  it('resizes the artboard without touching shapes, and can be undone', () => {
+    const store = useEditorStore.getState()
+    store.addRectangle()
+    const shapeBefore = { ...useEditorStore.getState().shapes[0]! }
+
+    store.beginChange()
+    store.setCanvasSize(1080, 1080)
+    const state = useEditorStore.getState()
+    expect(state.canvas).toEqual({ width: 1080, height: 1080 })
+    // Shapes keep their geometry; the artboard is not a transform.
+    expect(state.shapes[0]).toEqual(shapeBefore)
+
+    store.undo()
+    expect(useEditorStore.getState().canvas).toEqual({ width: 800, height: 600 })
+  })
+
+  it('clamps the size to the minimum', () => {
+    useEditorStore.getState().setCanvasSize(5, 5)
+    expect(useEditorStore.getState().canvas).toEqual({ width: 50, height: 50 })
+  })
+})
+
+describe('layer order', () => {
+  it('brings a shape to the front and sends it to the back', () => {
+    const store = useEditorStore.getState()
+    store.addRectangle()
+    store.addCircle()
+    const [first, second] = useEditorStore.getState().shapes.map((s) => s.id)
+
+    store.sendToBack(second!)
+    expect(useEditorStore.getState().shapes.map((s) => s.id)).toEqual([second, first])
+
+    store.bringToFront(second!)
+    expect(useEditorStore.getState().shapes.map((s) => s.id)).toEqual([first, second])
   })
 })
 

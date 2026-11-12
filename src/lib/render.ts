@@ -1,5 +1,9 @@
-import type { Shape } from '../types'
+import type { Shape, TextShape } from '../types'
 import { getCenter } from './geometry'
+
+export function textFont(shape: Pick<TextShape, 'fontSize' | 'bold'>): string {
+  return `${shape.bold ? '600 ' : ''}${shape.fontSize}px system-ui, sans-serif`
+}
 
 export function withRotation(ctx: CanvasRenderingContext2D, shape: Shape, draw: () => void): void {
   const center = getCenter(shape)
@@ -28,7 +32,7 @@ export function drawShape(ctx: CanvasRenderingContext2D, shape: Shape): void {
       }
       case 'text':
         ctx.textBaseline = 'top'
-        ctx.font = `${shape.fontSize}px system-ui, sans-serif`
+        ctx.font = textFont(shape)
         ctx.fillText(shape.text, shape.x, shape.y)
         break
     }
