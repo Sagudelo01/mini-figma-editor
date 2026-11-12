@@ -2,6 +2,12 @@
 
 A small Figma-like visual editor built with React, TypeScript and an HTML5 canvas. Create rectangles, circles and text, then move, resize and rotate them, tweak their properties, undo/redo your work and export the result as a PNG.
 
+**[Live demo](https://mini-figma-editor.vercel.app)**
+
+![The editor in its dark theme](docs/screenshot-dark.jpg)
+
+![The editor in its light theme](docs/screenshot-light.jpg)
+
 ## Features
 
 - **Shapes** — add rectangles, circles and text to the canvas; they animate in.
